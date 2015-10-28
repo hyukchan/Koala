@@ -10,5 +10,22 @@
             android:layout_height="wrap_content"
             android:text="Hello World, MainActivity"
             />
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal">
+
+    </LinearLayout>
+
+    <ListView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/listView"
+        android:layout_gravity="center_horizontal"
+        android:stackFromBottom="true"
+        android:transcriptMode="alwaysScroll"
+        android:choiceMode="none" />
 </LinearLayout>
 
