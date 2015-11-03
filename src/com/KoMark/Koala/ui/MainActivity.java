@@ -1,73 +1,94 @@
 package com.KoMark.Koala.ui;
 
 import android.app.Activity;
-import android.content.Context;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
+import android.graphics.Color;
 import android.os.Bundle;
-import android.widget.ArrayAdapter;
-import android.widget.ListView;
+import android.util.Log;
+import com.KoMark.Koala.KoalaApplication;
 import com.KoMark.Koala.R;
+import com.KoMark.Koala.core.listeners.AccReadingListener;
+import com.KoMark.Koala.data.SensorData;
+import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.YAxis;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.utils.ColorTemplate;
 
-import java.util.ArrayList;
+public class MainActivity extends Activity implements AccReadingListener {
 
-public class MainActivity extends Activity implements SensorEventListener {
-
-    private SensorManager mSensorManager;
-    private Sensor mSensor;
-    private ListView lv;
-    private ArrayList<String> readings = new ArrayList<String>();
-    private ArrayAdapter<String> arrayAdapter;
-    long lastUpdate;
+    LineChart chart;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
-        lv = (ListView) findViewById(R.id.listView);
-        readings.add("Measurements:");
-        arrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, readings);
-        lv.setAdapter(arrayAdapter);
-        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        mSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+
+        ((KoalaApplication) getApplicationContext()).getKoalaManager().kSensorManager.addAccReadingListener(this);
+
+        chart = (LineChart) findViewById(R.id.chart);
+        chart.setBackgroundColor(Color.rgb(77, 77, 77));
+        chart.setGridBackgroundColor(Color.rgb(77, 77, 77));
+        chart.setDrawGridBackground(false);
+        chart.setData(new LineData());
+        chart.setDragEnabled(true);
+        chart.invalidate();
     }
 
+    int[] mColors = ColorTemplate.VORDIPLOM_COLORS;
+
     @Override
-    protected void onResume() {
-        super.onResume();
-        mSensorManager.registerListener(this, mSensor, SensorManager.SENSOR_DELAY_NORMAL);
+    public void onAccReadingReceived(SensorData sensorData) {
+        addDataToChart(sensorData);
     }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-        mSensorManager.unregisterListener(this);
+    public void addDataToChart(SensorData sensorData) {
+        addEntry(sensorData);
     }
 
-    @Override
-    public void onSensorChanged(SensorEvent sensorEvent) {
-        Sensor _sensor = sensorEvent.sensor;
+    private void addEntry(SensorData sensorData) {
 
-        if (_sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-            float x = sensorEvent.values[0];
-            float y = sensorEvent.values[1];
-            float z = sensorEvent.values[2];
+        LineData data = chart.getData();
 
-            long curTime = System.currentTimeMillis();
+        if(data != null) {
 
-            if ((curTime - lastUpdate) > 100) {
-                lastUpdate = curTime;
-                readings.add("x: "+x+", y: "+y+", z: "+z);
-                arrayAdapter.notifyDataSetChanged();
+            LineDataSet set = data.getDataSetByIndex(0);
 
+            if (set == null) {
+                set = createSet();
+                data.addDataSet(set);
             }
+
+            // add a new x-value first
+            data.addXValue(sensorData.getTimestamp() + "");
+
+            // choose a random dataSet
+            int randomDataSetIndex = (int) (Math.random() * data.getDataSetCount());
+
+            data.addEntry(new Entry(sensorData.getAcc(), set.getEntryCount()), randomDataSetIndex);
+
+            // let the chart know it's data has changed
+            chart.notifyDataSetChanged();
+
+            chart.setVisibleXRangeMaximum(50);
+            chart.setVisibleYRangeMaximum(100, YAxis.AxisDependency.LEFT);
+//
+//            // this automatically refreshes the chart (calls invalidate())
+            chart.moveViewTo(data.getXValCount() - 7, 50f, YAxis.AxisDependency.LEFT);
         }
     }
 
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+    private LineDataSet createSet() {
 
+        LineDataSet set = new LineDataSet(null, "DataSet 1");
+        set.setLineWidth(2.5f);
+        set.setCircleSize(4.5f);
+        set.setColor(Color.rgb(240, 99, 99));
+        set.setCircleColor(Color.rgb(240, 99, 99));
+        set.setHighLightColor(Color.rgb(190, 190, 190));
+        set.setAxisDependency(YAxis.AxisDependency.LEFT);
+        set.setValueTextSize(10f);
+
+        return set;
     }
 }

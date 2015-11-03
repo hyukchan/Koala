@@ -4,22 +4,9 @@
               android:layout_width="fill_parent"
               android:layout_height="fill_parent"
         >
-
-    <LinearLayout
-        android:orientation="horizontal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal">
-
-    </LinearLayout>
-
-    <ListView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/listView"
-        android:layout_gravity="center_horizontal"
-        android:stackFromBottom="true"
-        android:transcriptMode="alwaysScroll"
-        android:choiceMode="none" />
+    <com.github.mikephil.charting.charts.LineChart
+            android:id="@+id/chart"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
 </LinearLayout>
 

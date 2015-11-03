@@ -21,6 +21,5 @@ public class KoalaService extends Service {
         super.onCreate();
 
         koalaManager = ((KoalaApplication) getApplicationContext()).getKoalaManager();
-
     }
 }

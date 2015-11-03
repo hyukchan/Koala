@@ -13,15 +13,9 @@ public class KoalaManager {
     public KComm kComm;
 
     public void initializeComponents(Context applicationContext) {
-        kCluster = new KCluster();
         kSensorManager = new KSensorManager(applicationContext);
+        kCluster = new KCluster(applicationContext);
         kAlertingAgent = new KAlertingAgent();
         kComm = new KComm();
-
-        Log.e("KoalaManager", "initializeComponents");
-    }
-
-    public void test() {
-        Log.e("KoalaManager", "haha ça marche !");
     }
 }
