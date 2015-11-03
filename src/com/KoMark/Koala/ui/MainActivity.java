@@ -1,4 +1,4 @@
-package com.KoMark.Koala;
+package com.KoMark.Koala.ui;
 
 import android.app.Activity;
 import android.content.Context;
@@ -7,9 +7,9 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import com.KoMark.Koala.R;
 
 import java.util.ArrayList;
 
@@ -59,8 +59,6 @@ public class MainActivity extends Activity implements SensorEventListener {
 
             if ((curTime - lastUpdate) > 100) {
                 lastUpdate = curTime;
-
-                Log.e("Acc", "x:" + x + ", y: " + y + ", z: " + z);
                 readings.add("x: "+x+", y: "+y+", z: "+z);
                 arrayAdapter.notifyDataSetChanged();
 
