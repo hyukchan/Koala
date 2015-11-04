@@ -16,12 +16,16 @@ public class KoalaManager {
         kCluster = new KCluster();
         kSensorManager = new KSensorManager(applicationContext);
         kAlertingAgent = new KAlertingAgent();
-        kComm = new KComm();
+        kComm = new KComm(applicationContext);
 
         Log.e("KoalaManager", "initializeComponents");
     }
 
     public void test() {
         Log.e("KoalaManager", "haha ça marche !");
+    }
+
+    public void shutdown() {
+        kComm.closeAllConnections();
     }
 }
