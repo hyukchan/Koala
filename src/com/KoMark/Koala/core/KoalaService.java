@@ -22,4 +22,10 @@ public class KoalaService extends Service {
 
         koalaManager = ((KoalaApplication) getApplicationContext()).getKoalaManager();
     }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        koalaManager.shutdown();
+    }
 }

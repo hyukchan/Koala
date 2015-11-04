@@ -16,6 +16,10 @@ public class KoalaManager {
         kSensorManager = new KSensorManager(applicationContext);
         kCluster = new KCluster(applicationContext);
         kAlertingAgent = new KAlertingAgent();
-        kComm = new KComm();
+        kComm = new KComm(applicationContext);
+    }
+
+    public void shutdown() {
+        kComm.closeAllConnections();
     }
 }

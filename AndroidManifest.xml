@@ -21,4 +21,6 @@
         </activity>
         <service android:name=".core.KoalaService"/>
     </application>
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.BLUETOOTH" />
 </manifest>
