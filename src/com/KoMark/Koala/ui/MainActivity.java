@@ -49,8 +49,13 @@ public class MainActivity extends Activity implements AccReadingListener, Sensor
     }
 
     @Override
-    public void onSensorDataPackageReceive(ArrayList<SensorData> sensorDataPackage) {
+    public void onSensorDataPackageReceive(ArrayList<SensorData> sensorDataPackage, String senderDeviceName) {
         //TODO: Add new DataSet and add SensorDatas from the package to the chart
+        for (SensorData sensorData : sensorDataPackage) {
+            kChart.addEntry(sensorData, senderDeviceName);
+        }
+
+
         Log.i("MainActivity", "Receive sensor data package");
     }
 }
