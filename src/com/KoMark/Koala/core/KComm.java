@@ -14,9 +14,11 @@ import android.os.Message;
 import android.util.Log;
 
 import com.KoMark.Koala.KoalaApplication;
+import com.KoMark.Koala.core.listeners.SensorDataPackageReceiveListener;
 import com.KoMark.Koala.data.SensorData;
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.util.*;
 
 /**
@@ -35,6 +37,8 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
     private Context context;
     private boolean isSlave;
     private ConnectedThread socketT;
+
+    private ArrayList<SensorDataPackageReceiveListener> sensorDataPackageReceiveListeners;
 
     public KComm(Context context) {
         mHandler = new Handler(this);
@@ -56,6 +60,8 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         }
         //setupBtNetwork();
         Log.i(CLASS_TAG, "End of constructor");
+
+        sensorDataPackageReceiveListeners = new ArrayList<SensorDataPackageReceiveListener>();
     }
 
     private void setupBtNetwork() {
