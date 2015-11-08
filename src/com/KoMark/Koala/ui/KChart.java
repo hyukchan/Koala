@@ -35,7 +35,15 @@ public class KChart {
     }
 
     public void addEntry(SensorData sensorData, String deviceName) {
-        int deviceDatasetIndex = deviceDatasets.containsKey(deviceName) ? deviceDatasets.get(deviceName) : devicesetIndex++;
+
+        int deviceDatasetIndex;
+        if(deviceDatasets.containsKey(deviceName)) {
+            deviceDatasetIndex = deviceDatasets.get(deviceName);
+        } else {
+            deviceDatasets.put(deviceName, devicesetIndex);
+            deviceDatasetIndex = devicesetIndex;
+            devicesetIndex++;
+        }
         addEntryToDataset(sensorData, deviceName, deviceDatasetIndex);
     }
 
