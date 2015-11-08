@@ -1,6 +1,7 @@
 package com.KoMark.Koala.ui;
 
 import android.app.Activity;
+import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
@@ -18,13 +19,14 @@ import com.github.mikephil.charting.utils.ColorTemplate;
 public class MainActivity extends Activity implements AccReadingListener {
 
     LineChart chart;
+    KoalaApplication context;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
-
-        ((KoalaApplication) getApplicationContext()).getKoalaManager().kSensorManager.addAccReadingListener(this);
+        context = (KoalaApplication) getApplicationContext();
+        context.getKoalaManager().kSensorManager.addAccReadingListener(this);
 
         chart = (LineChart) findViewById(R.id.chart);
         chart.setBackgroundColor(Color.rgb(77, 77, 77));
@@ -76,6 +78,14 @@ public class MainActivity extends Activity implements AccReadingListener {
 //            // this automatically refreshes the chart (calls invalidate())
             chart.moveViewTo(data.getXValCount() - 7, 50f, YAxis.AxisDependency.LEFT);
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.i("MainActivity", "OnDestroy called");
+        context.onTerminate();
+
     }
 
     private LineDataSet createSet() {

@@ -4,8 +4,11 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -23,7 +26,7 @@ import java.util.UUID;
 /**
  * Created by Hyukchan on 03/11/2015.
  */
-public class KComm implements Handler.Callback {
+public class KComm extends BroadcastReceiver implements Handler.Callback {
 
     private BluetoothAdapter mBluetoothAdapter;
     private KoalaManager kManager;
@@ -33,21 +36,45 @@ public class KComm implements Handler.Callback {
     private final String CLASS_TAG = "KComm";
     private ServerThread serverT;
     private ClientThread clientT;
+    private Context context;
+
+    public boolean isSlave() {
+        return isSlave;
+    }
+
     private boolean isSlave;
     private ConnectedThread socketT;
 
     public KComm(Context context) {
         mHandler = new Handler(this);
+        this.context = context;
         kManager = ((KoalaApplication) context).getKoalaManager();
+        IntentFilter btEnabledFilter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
+        ((KoalaApplication)context).registerReceiver(this, btEnabledFilter);
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if(mBluetoothAdapter == null) {
             //Not supported. Must throw error.
         }
         if(!mBluetoothAdapter.isEnabled()) {
             Intent enableBt = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            enableBt.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             context.startActivity(enableBt);
             // should ensure that bluetooth has been enabled by registering for a bluetooth state change
+        } else {
+            setupBtNetwork();
         }
+        //setupBtNetwork();
+        Log.i(CLASS_TAG, "End of constructor");
+    }
+
+    private void setupBtNetwork() {
+        // Ensures that the phone is discoverable through BT indefinitely
+        Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
+        discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 0);
+        discoverableIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        context.startActivity(discoverableIntent);
+        //
+        IntentFilter btFoundDevice = new IntentFilter(BluetoothDevice.ACTION_FOUND);
         String btMAC = mBluetoothAdapter.getAddress().replaceAll(":", "");
         btMACValue = Long.parseLong(btMAC, 16);
         Log.i("KComm", "BtMACVALUE = " + btMACValue);
@@ -55,9 +82,7 @@ public class KComm implements Handler.Callback {
         pairedDevices = mBluetoothAdapter.getBondedDevices();
         BluetoothDevice master = null;
         boolean foundMaster = false;
-        int masterIndex;
         if (pairedDevices.size() > 0) {
-            int index = 0;
             long maxMAC = btMACValue;
             for(BluetoothDevice aDevice : pairedDevices) {
                 if(getMACLong(aDevice) > maxMAC) {
@@ -65,7 +90,6 @@ public class KComm implements Handler.Callback {
                     master = aDevice;
                     foundMaster = true;
                 }
-                index++;
             }
         }
         if(foundMaster) {
@@ -79,9 +103,6 @@ public class KComm implements Handler.Callback {
             serverT.start();
             isSlave = false;
         }
-        Log.i(CLASS_TAG, "End of constructor");
-
-
     }
 
     private long getMACLong(BluetoothDevice device) {
@@ -100,8 +121,8 @@ public class KComm implements Handler.Callback {
         switch(inputMessage.what) {
             case 1:
                 byte[] buf = (byte[]) obj;
-                Log.i("KComm", "Received message: "+(obj).toString());
-                Log.i(CLASS_TAG, "Message: "+buf.toString());
+                Log.i("KComm", "Received message: " + (obj).toString());
+                Log.i(CLASS_TAG, "Message: " + buf.toString());
                 break;
             case 2:
                 Log.i(CLASS_TAG, "Write/Read now possible.");
@@ -116,8 +137,76 @@ public class KComm implements Handler.Callback {
     }
 
     public void closeAllConnections() {
+        Log.i(CLASS_TAG, "Start: Closing all connections.");
         if(clientT != null) clientT.cancel();
         if(serverT != null) serverT.cancel();
+        Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
+        discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 1);
+        discoverableIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        context.startActivity(discoverableIntent); // Ensures that the phone is no longer discoverable
+        Log.i(CLASS_TAG, "Finish: Closing all connections.");
+
+    }
+
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        Log.i(CLASS_TAG, "Broadcast received.");
+        if(intent.getAction().equals(BluetoothAdapter.ACTION_STATE_CHANGED) && (int) intent.getExtras().get(BluetoothAdapter.EXTRA_STATE) == BluetoothAdapter.STATE_ON) {
+            int extraState = (int) intent.getExtras().get(BluetoothAdapter.EXTRA_STATE);
+            int previousState = (int) intent.getExtras().get(BluetoothAdapter.EXTRA_PREVIOUS_STATE);
+            Log.i(CLASS_TAG, "Extras: "+extraState + " , "+previousState);
+        }
+
+
+    }
+
+    private class ConnectedThread extends Thread {
+        private final BluetoothSocket mmSocket;
+        private final InputStream mmInStream;
+        private final OutputStream mmOutStream;
+
+        public ConnectedThread(BluetoothSocket socket) {
+            mmSocket = socket;
+            InputStream tmpIn = null;
+            OutputStream tmpOut = null;
+
+            try {
+                tmpIn = socket.getInputStream();
+                tmpOut = socket.getOutputStream();
+            } catch(IOException e) {
+                e.printStackTrace();
+            }
+
+            mmInStream = tmpIn;
+            mmOutStream = tmpOut;
+        }
+
+        public void run() {
+            byte[] buf = new byte[1024];
+            int bytes;
+            mHandler.obtainMessage(2).sendToTarget();
+            while(true) {
+                try {
+                    bytes = mmInStream.read(buf);
+                    mHandler.obtainMessage(1, bytes, -1, buf).sendToTarget();
+                } catch(IOException e) {
+                    e.printStackTrace();
+                    break;
+                }
+            }
+        }
+
+        public void write(byte[] bytes) {
+            try {
+                mmOutStream.write(bytes);
+            } catch(IOException e) { }
+        }
+
+        public void cancel() {
+            try {
+                mmSocket.close();
+            } catch (IOException e) { }
+        }
     }
 
     private class ServerThread extends Thread {
@@ -169,54 +258,6 @@ public class KComm implements Handler.Callback {
 
     }
 
-    private class ConnectedThread extends Thread {
-        private final BluetoothSocket mmSocket;
-        private final InputStream mmInStream;
-        private final OutputStream mmOutStream;
-
-        public ConnectedThread(BluetoothSocket socket) {
-            mmSocket = socket;
-            InputStream tmpIn = null;
-            OutputStream tmpOut = null;
-
-            try {
-                tmpIn = socket.getInputStream();
-                tmpOut = socket.getOutputStream();
-            } catch(IOException e) {
-                e.printStackTrace();
-            }
-
-            mmInStream = tmpIn;
-            mmOutStream = tmpOut;
-        }
-
-        public void run() {
-            byte[] buf = new byte[1024];
-            int bytes;
-            mHandler.obtainMessage(2).sendToTarget();
-            while(true) {
-                try {
-                    bytes = mmInStream.read(buf);
-                    mHandler.obtainMessage(1, bytes, -1, buf).sendToTarget();
-                } catch(IOException e) {
-                    e.printStackTrace();
-                    break;
-                }
-            }
-        }
-
-        public void write(byte[] bytes) {
-            try {
-                mmOutStream.write(bytes);
-            } catch(IOException e) { }
-        }
-
-        public void cancel() {
-            try {
-               mmSocket.close();
-            } catch (IOException e) { }
-        }
-    }
 
     private class ClientThread extends Thread {
         private final BluetoothSocket mmSocket;
@@ -228,7 +269,9 @@ public class KComm implements Handler.Callback {
 
             try {
                 tmp = mmDevice.createRfcommSocketToServiceRecord(UUID.fromString("e519c52c-81fb-11e5-8bcf-feff819cdc9f"));
-            } catch (IOException e) { }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             mmSocket = tmp;
         }
 
