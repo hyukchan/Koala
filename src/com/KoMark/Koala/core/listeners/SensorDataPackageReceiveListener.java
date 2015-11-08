@@ -8,5 +8,5 @@ import java.util.ArrayList;
  * Created by Hyukchan on 08/11/2015.
  */
 public interface SensorDataPackageReceiveListener {
-    void onSensorDataPackageReceive(ArrayList<SensorData> sensorDataPackage);
+    void onSensorDataPackageReceive(ArrayList<SensorData> sensorDataPackage, String senderDeviceName);
 }

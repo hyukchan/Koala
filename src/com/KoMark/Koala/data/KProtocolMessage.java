@@ -18,14 +18,21 @@ public class KProtocolMessage implements Serializable {
     private ArrayList<SensorData> sensorDatas;
     private ArrayList<KGroupData> groupData;
 
+    private String senderDeviceName;
 
     public KProtocolMessage() {
 
     }
 
-    public KProtocolMessage(ArrayList<SensorData> sensorDatas, int messageType) {
+
+    public KProtocolMessage(ArrayList<SensorData> sensorDatas, int messageType, String senderDeviceName) {
         this.sensorDatas = sensorDatas;
         this.messageType = messageType;
+        this.senderDeviceName = senderDeviceName;
+    }
+
+    public String getSenderDeviceName() {
+        return senderDeviceName;
     }
 
     public KProtocolMessage setMessageType(int messageDataType) {

@@ -8,7 +8,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -19,7 +18,6 @@ import com.KoMark.Koala.data.KProtocolMessage;
 import com.KoMark.Koala.data.SensorData;
 
 import java.io.*;
-import java.lang.reflect.Array;
 import java.util.*;
 
 /**
@@ -125,8 +123,9 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
                 if(obj instanceof KProtocolMessage) {
                     KProtocolMessage kProtocolMessage = (KProtocolMessage) obj;
                     ArrayList<SensorData> sensorDataPackage = kProtocolMessage.getSensorDatas();
+                    String senderDeviceName = kProtocolMessage.getSenderDeviceName();
                     for (SensorDataPackageReceiveListener sensorDataPackageReceiveListener : sensorDataPackageReceiveListeners) {
-                        sensorDataPackageReceiveListener.onSensorDataPackageReceive(sensorDataPackage);
+                        sensorDataPackageReceiveListener.onSensorDataPackageReceive(sensorDataPackage, senderDeviceName);
                     }
                 }
                 Log.i("KComm", "Received message: " + (obj).toString());
@@ -152,7 +151,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
      * @param accReadings
      */
     public void sendAccReadings(ArrayList<SensorData> accReadings) {
-        KProtocolMessage kProtocolMessage = new KProtocolMessage(accReadings, KProtocolMessage.MT_DATA);
+        KProtocolMessage kProtocolMessage = new KProtocolMessage(accReadings, KProtocolMessage.MT_DATA, mBluetoothAdapter.getName());
         socketT.writeObject(kProtocolMessage);
     }
 
@@ -289,7 +288,6 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
 
 
     }
-
 
     private class ClientThread extends Thread {
         private final BluetoothSocket mmSocket;
