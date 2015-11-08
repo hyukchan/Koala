@@ -33,7 +33,7 @@ public class KCluster implements AccReadingListener {
         accReadings.add(sensorData);
 
         //FIXME: Sensitivity needs to be refined
-        if (sensorData.getAcc() > 30) {
+        if (sensorData.getAcc() > 20) {
             //Sends data to master device
             if(koalaManager.kComm.isSlave()) {
                 //TODO: send only the last values instead of the whole data set
