@@ -1,9 +1,14 @@
 package com.KoMark.Koala.data;
 
+import java.io.Serializable;
+
 /**
  * Created by Hyukchan on 03/11/2015.
  */
-public class SensorData {
+public class SensorData implements Serializable{
+
+    private static final long serialVersionUID = 643623572591148629L;
+
     private float mAcc;
     private long mTimestamp;
 

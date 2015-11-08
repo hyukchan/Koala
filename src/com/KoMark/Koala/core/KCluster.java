@@ -34,6 +34,7 @@ public class KCluster implements AccReadingListener {
 
         //FIXME: Sensitivity needs to be refined
         if (sensorData.getAcc() > 30) {
+            //Sends data to master device
             if(koalaManager.kComm.isSlave()) {
                 koalaManager.kComm.sendAccReadings(accReadings);
             }

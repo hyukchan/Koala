@@ -16,9 +16,7 @@ import android.util.Log;
 import com.KoMark.Koala.KoalaApplication;
 import com.KoMark.Koala.data.SensorData;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -113,18 +111,8 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         Object obj = inputMessage.obj;
         switch(inputMessage.what) {
             case 1:
-                byte[] buf = (byte[]) obj;
                 Log.i("KComm", "Received message: " + (obj).toString());
-                Log.i(CLASS_TAG, "Message: " + buf.toString());
                 break;
-            case 2:
-                Log.i(CLASS_TAG, "Write/Read now possible.");
-                if(isSlave) {
-                    Log.i(CLASS_TAG, "Slave writing to master");
-                    byte[] byteArr = new byte[10];
-                    byteArr = "Hello".getBytes();
-                    socketT.write(byteArr);
-                }
         }
         return false;
     }
@@ -141,8 +129,12 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         Log.i(CLASS_TAG, "Finish: Closing all connections.");
     }
 
+    /**
+     * Send acceleration readings to master device
+     * @param accReadings
+     */
     public void sendAccReadings(ArrayList<SensorData> accReadings) {
-
+        socketT.writeObject(accReadings);
     }
 
     public boolean isSlave() {
@@ -165,42 +157,61 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         private final BluetoothSocket mmSocket;
         private final InputStream mmInStream;
         private final OutputStream mmOutStream;
+        private final ObjectInputStream mmObjectInputStream;
+        private final ObjectOutputStream mmObjectOutputStream;
+
 
         public ConnectedThread(BluetoothSocket socket) {
             mmSocket = socket;
             InputStream tmpIn = null;
             OutputStream tmpOut = null;
+            ObjectInputStream tmpObjIn = null;
+            ObjectOutputStream tmpObjOut = null;
 
             try {
                 tmpIn = socket.getInputStream();
                 tmpOut = socket.getOutputStream();
+                tmpObjIn = new ObjectInputStream(tmpIn);
+                tmpObjOut = new ObjectOutputStream(tmpOut);
             } catch(IOException e) {
                 e.printStackTrace();
             }
 
             mmInStream = tmpIn;
             mmOutStream = tmpOut;
+            mmObjectInputStream = tmpObjIn;
+            mmObjectOutputStream = tmpObjOut;
         }
 
         public void run() {
-            byte[] buf = new byte[1024];
-            int bytes;
+            ArrayList<SensorData> sensorDataPackage;
             mHandler.obtainMessage(2).sendToTarget();
             while(true) {
                 try {
-                    bytes = mmInStream.read(buf);
-                    mHandler.obtainMessage(1, bytes, -1, buf).sendToTarget();
+                    sensorDataPackage = (ArrayList<SensorData>) mmObjectInputStream.readObject();
+                    mHandler.obtainMessage(1, sensorDataPackage).sendToTarget();
                 } catch(IOException e) {
                     e.printStackTrace();
                     break;
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
                 }
             }
         }
 
+        //TODO: delete me
         public void write(byte[] bytes) {
             try {
                 mmOutStream.write(bytes);
             } catch(IOException e) { }
+        }
+
+        public void writeObject(Object o) {
+            try {
+                mmObjectOutputStream.writeObject(o);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
         public void cancel() {
