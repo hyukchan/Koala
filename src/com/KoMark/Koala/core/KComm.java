@@ -11,14 +11,12 @@ import android.os.Message;
 import android.util.Log;
 
 import com.KoMark.Koala.KoalaApplication;
+import com.KoMark.Koala.data.SensorData;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Iterator;
-import java.util.ListIterator;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Created by Hyukchan on 03/11/2015.
@@ -118,6 +116,14 @@ public class KComm implements Handler.Callback {
     public void closeAllConnections() {
         if(clientT != null) clientT.cancel();
         if(serverT != null) serverT.cancel();
+    }
+
+    public void sendAccReadings(ArrayList<SensorData> accReadings) {
+
+    }
+
+    public boolean isSlave() {
+        return isSlave;
     }
 
     private class ServerThread extends Thread {
