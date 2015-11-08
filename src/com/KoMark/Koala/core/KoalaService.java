@@ -3,6 +3,8 @@ package com.KoMark.Koala.core;
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
+import android.util.Log;
+
 import com.KoMark.Koala.KoalaApplication;
 
 /**
@@ -26,6 +28,10 @@ public class KoalaService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        unregisterReceiver(koalaManager.kComm);
+        Log.i("KService", "OnDestroy called.");
         koalaManager.shutdown();
     }
+
+
 }

@@ -3,6 +3,8 @@ package com.KoMark.Koala;
 import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
+import android.util.Log;
+
 import com.KoMark.Koala.core.KoalaManager;
 import com.KoMark.Koala.core.KoalaService;
 
@@ -23,6 +25,13 @@ public class KoalaApplication extends Application {
         koalaManager.initializeComponents(this);
 
         startService(new Intent(this, KoalaService.class));
+    }
+
+    @Override
+    public void onTerminate() {
+        super.onTerminate();
+        Log.i("KApplication", "OnTerminate called");
+        koalaManager.shutdown();
     }
 
     public KoalaManager getKoalaManager() {
