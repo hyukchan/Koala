@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import com.KoMark.Koala.KoalaApplication;
 import com.KoMark.Koala.R;
 import com.KoMark.Koala.core.listeners.AccReadingListener;

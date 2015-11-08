@@ -35,11 +35,6 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
     private ServerThread serverT;
     private ClientThread clientT;
     private Context context;
-
-    public boolean isSlave() {
-        return isSlave;
-    }
-
     private boolean isSlave;
     private ConnectedThread socketT;
 
