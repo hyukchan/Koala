@@ -1,6 +1,4 @@
-package com.KoMark.Koala.core;
-
-import com.KoMark.Koala.data.*;
+package com.KoMark.Koala.data;
 
 import java.io.Serializable;
 import java.util.ArrayList;

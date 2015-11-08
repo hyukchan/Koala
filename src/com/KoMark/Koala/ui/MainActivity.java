@@ -24,6 +24,7 @@ public class MainActivity extends Activity implements AccReadingListener, Sensor
         setContentView(R.layout.main);
         context = (KoalaApplication) getApplicationContext();
         context.getKoalaManager().kSensorManager.addAccReadingListener(this);
+        context.getKoalaManager().kComm.addSensorDataPackageReceiveListener(this);
 
         LineChart lineChart = (LineChart) findViewById(R.id.chart);
 
@@ -50,5 +51,6 @@ public class MainActivity extends Activity implements AccReadingListener, Sensor
     @Override
     public void onSensorDataPackageReceive(ArrayList<SensorData> sensorDataPackage) {
         //TODO: Add new DataSet and add SensorDatas from the package to the chart
+        Log.i("MainActivity", "Receive sensor data package");
     }
 }
