@@ -173,6 +173,8 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
                 tmpOut = socket.getOutputStream();
                 tmpObjIn = new ObjectInputStream(tmpIn);
                 tmpObjOut = new ObjectOutputStream(tmpOut);
+                tmpObjOut.flush();
+                tmpObjIn = new ObjectInputStream(tmpIn);
             } catch(IOException e) {
                 e.printStackTrace();
             }
@@ -184,11 +186,11 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         }
 
         public void run() {
-            ArrayList<SensorData> sensorDataPackage;
-            mHandler.obtainMessage(2).sendToTarget();
+            Object sensorDataPackage;
+            //mHandler.obtainMessage(2).sendToTarget();
             while(true) {
                 try {
-                    sensorDataPackage = (ArrayList<SensorData>) mmObjectInputStream.readObject();
+                    sensorDataPackage = mmObjectInputStream.readObject();
                     mHandler.obtainMessage(1, sensorDataPackage).sendToTarget();
                 } catch(IOException e) {
                     e.printStackTrace();
@@ -244,13 +246,13 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
                 } catch(IOException e) {e.printStackTrace(); break;}
 
                 if(socket != null) {
-                    manageConnectedClient(socket);
-                    try {
+                      manageConnectedClient(socket);
+/*                    try {
                         mmServerSocket.close(); //Should not be closed if looking to accept more clients.
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                    break;
+                    break;*/
                 }
             }
         }
@@ -264,7 +266,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         private void manageConnectedClient(BluetoothSocket socket) {
             Log.i("KComm", "Now connected to: "+socket.getRemoteDevice().getName());
             socketT = new ConnectedThread(socket);
-            socketT.run();
+            socketT.start();
         }
 
 
@@ -313,7 +315,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
 
         private void manageMasterConnection(BluetoothSocket mmSocket) {
             socketT = new ConnectedThread(mmSocket);
-            socketT.run(); // Should store this thread somewhere so it can be closed correctly.
+            socketT.start(); // Should store this thread somewhere so it can be closed correctly.
         }
     }
 
