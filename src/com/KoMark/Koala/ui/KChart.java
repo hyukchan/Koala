@@ -65,7 +65,7 @@ public class KChart {
 
             // add a new x-value first
             data.addXValue(sensorData.getTimestamp() + "");
-            data.addEntry(new Entry(sensorData.getAcc(), set.getEntryCount()), datasetIndex);
+            data.addEntry(new Entry(sensorData.getAcc(), data.getDataSetByIndex(0).getEntryCount()), datasetIndex);
 
             // let the chart know it's data has changed
             lineChart.notifyDataSetChanged();
