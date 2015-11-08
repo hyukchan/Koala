@@ -8,10 +8,13 @@ import android.util.Log;
 import com.KoMark.Koala.KoalaApplication;
 import com.KoMark.Koala.R;
 import com.KoMark.Koala.core.listeners.AccReadingListener;
+import com.KoMark.Koala.core.listeners.SensorDataPackageReceiveListener;
 import com.KoMark.Koala.data.SensorData;
 import com.github.mikephil.charting.charts.LineChart;
 
-public class MainActivity extends Activity implements AccReadingListener {
+import java.util.ArrayList;
+
+public class MainActivity extends Activity implements AccReadingListener, SensorDataPackageReceiveListener {
     KChart kChart;
     KoalaApplication context;
 
@@ -21,6 +24,7 @@ public class MainActivity extends Activity implements AccReadingListener {
         setContentView(R.layout.main);
         context = (KoalaApplication) getApplicationContext();
         context.getKoalaManager().kSensorManager.addAccReadingListener(this);
+        context.getKoalaManager().kComm.addSensorDataPackageReceiveListener(this);
 
         LineChart lineChart = (LineChart) findViewById(R.id.chart);
 
@@ -42,5 +46,11 @@ public class MainActivity extends Activity implements AccReadingListener {
         super.onDestroy();
         Log.i("MainActivity", "OnDestroy called");
         context.onTerminate();
+    }
+
+    @Override
+    public void onSensorDataPackageReceive(ArrayList<SensorData> sensorDataPackage) {
+        //TODO: Add new DataSet and add SensorDatas from the package to the chart
+        Log.i("MainActivity", "Receive sensor data package");
     }
 }

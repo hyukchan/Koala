@@ -14,9 +14,12 @@ import android.os.Message;
 import android.util.Log;
 
 import com.KoMark.Koala.KoalaApplication;
+import com.KoMark.Koala.core.listeners.SensorDataPackageReceiveListener;
+import com.KoMark.Koala.data.KProtocolMessage;
 import com.KoMark.Koala.data.SensorData;
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.util.*;
 
 /**
@@ -35,6 +38,8 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
     private Context context;
     private boolean isSlave;
     private ConnectedThread socketT;
+
+    private ArrayList<SensorDataPackageReceiveListener> sensorDataPackageReceiveListeners;
 
     public KComm(Context context) {
         mHandler = new Handler(this);
@@ -56,6 +61,12 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         }
         //setupBtNetwork();
         Log.i(CLASS_TAG, "End of constructor");
+
+        sensorDataPackageReceiveListeners = new ArrayList<SensorDataPackageReceiveListener>();
+    }
+
+    public void addSensorDataPackageReceiveListener(SensorDataPackageReceiveListener sensorDataPackageReceiveListener) {
+        sensorDataPackageReceiveListeners.add(sensorDataPackageReceiveListener);
     }
 
     private void setupBtNetwork() {
@@ -111,6 +122,13 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         Object obj = inputMessage.obj;
         switch(inputMessage.what) {
             case 1:
+                if(obj instanceof KProtocolMessage) {
+                    KProtocolMessage kProtocolMessage = (KProtocolMessage) obj;
+                    ArrayList<SensorData> sensorDataPackage = kProtocolMessage.getSensorDatas();
+                    for (SensorDataPackageReceiveListener sensorDataPackageReceiveListener : sensorDataPackageReceiveListeners) {
+                        sensorDataPackageReceiveListener.onSensorDataPackageReceive(sensorDataPackage);
+                    }
+                }
                 Log.i("KComm", "Received message: " + (obj).toString());
                 break;
         }
@@ -134,7 +152,8 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
      * @param accReadings
      */
     public void sendAccReadings(ArrayList<SensorData> accReadings) {
-        socketT.writeObject(accReadings);
+        KProtocolMessage kProtocolMessage = new KProtocolMessage(accReadings, KProtocolMessage.MT_DATA);
+        socketT.writeObject(kProtocolMessage);
     }
 
     public boolean isSlave() {
@@ -171,7 +190,6 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
             try {
                 tmpIn = socket.getInputStream();
                 tmpOut = socket.getOutputStream();
-                tmpObjIn = new ObjectInputStream(tmpIn);
                 tmpObjOut = new ObjectOutputStream(tmpOut);
                 tmpObjOut.flush();
                 tmpObjIn = new ObjectInputStream(tmpIn);
