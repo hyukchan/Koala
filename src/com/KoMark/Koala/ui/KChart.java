@@ -1,6 +1,8 @@
 package com.KoMark.Koala.ui;
 
 import android.graphics.Color;
+import android.util.Log;
+
 import com.KoMark.Koala.data.SensorData;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.YAxis;
@@ -17,6 +19,7 @@ public class KChart {
 
     LineChart lineChart;
     HashMap<String, Integer> deviceDatasets;
+    long timestampBase;
 
     int devicesetIndex = 1;
 
@@ -26,6 +29,7 @@ public class KChart {
     }
 
     public void initializeChart() {
+
         lineChart.setBackgroundColor(Color.rgb(77, 77, 77));
         lineChart.setGridBackgroundColor(Color.rgb(77, 77, 77));
         lineChart.setDrawGridBackground(false);
@@ -34,7 +38,7 @@ public class KChart {
         lineChart.invalidate();
     }
 
-    public void addEntry(SensorData sensorData, String deviceName) {
+    public void addEntry(SensorData sensorData, String deviceName) { //called for remote data
 
         int deviceDatasetIndex;
         if(deviceDatasets.containsKey(deviceName)) {
@@ -48,12 +52,17 @@ public class KChart {
     }
 
 
-    public void addEntry(SensorData sensorData) {
+    public void addEntry(SensorData sensorData) { //Called by own device
+        if(lineChart.getData().getXValCount() == 0) {
+            timestampBase = sensorData.getTimestamp();
+            Log.i("KChart", "Base timestamp: " +timestampBase);
+        }
         addEntryToDataset(sensorData, "Current Device", 0);
     }
 
     public void addEntryToDataset(SensorData sensorData, String deviceName, int datasetIndex) {
         LineData data = lineChart.getData();
+        int insertIndex;
 
         if(data != null) {
             LineDataSet set = data.getDataSetByIndex(datasetIndex);
@@ -64,8 +73,16 @@ public class KChart {
             }
 
             // add a new x-value first
-            data.addXValue(sensorData.getTimestamp() + "");
-            data.addEntry(new Entry(sensorData.getAcc(), set.getEntryCount() + data.getDataSetByIndex(0).getEntryCount()), datasetIndex);
+            if(datasetIndex == 0) {
+                data.addXValue(sensorData.getTimestamp() + "");
+                data.addEntry(new Entry(sensorData.getAcc(), set.getEntryCount()), datasetIndex);
+            } else {
+                insertIndex = (int) (sensorData.getTimestamp()-timestampBase) % 50000000;
+                Log.i("KChart", "Index count: "+insertIndex);
+                data.addEntry(new Entry(sensorData.getTimestamp(), insertIndex), datasetIndex);
+            }
+
+            //data.addEntry(new Entry(sensorData.getAcc(), set.getEntryCount() + data.getDataSetByIndex(0).getEntryCount()), datasetIndex);
 
             // let the chart know it's data has changed
             lineChart.notifyDataSetChanged();
