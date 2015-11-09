@@ -46,7 +46,6 @@ public class KSensorManager implements SensorEventListener {
         if (_sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
 
             long curTime = System.currentTimeMillis();
-
             if ((curTime - lastUpdate) > 50) {
                 lastUpdate = curTime;
 
@@ -62,7 +61,7 @@ public class KSensorManager implements SensorEventListener {
 
                 float acc = Math.abs(linear_acceleration[0]) + Math.abs(linear_acceleration[1]) + Math.abs(linear_acceleration[2]);
 
-                SensorData sensorData = new SensorData(acc, sensorEvent.timestamp);
+                SensorData sensorData = new SensorData(acc, System.currentTimeMillis());
                 notifyAccReadingListeners(sensorData);
             }
         }
