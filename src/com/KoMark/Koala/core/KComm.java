@@ -207,7 +207,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
             //mHandler.obtainMessage(2).sendToTarget();
             while(true) {
                 try {
-                    sensorDataPackage = mmObjectInputStream.readObject();
+                    sensorDataPackage = mmObjectInputStream.readUnshared();
                     mHandler.obtainMessage(1, sensorDataPackage).sendToTarget();
                 } catch(IOException e) {
                     e.printStackTrace();
@@ -227,7 +227,8 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
 
         public void writeObject(Object o) {
             try {
-                mmObjectOutputStream.writeObject(o);
+                mmObjectOutputStream.reset();
+                mmObjectOutputStream.writeUnshared(o);
             } catch (IOException e) {
                 e.printStackTrace();
             }

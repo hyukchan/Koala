@@ -77,9 +77,9 @@ public class KChart {
                 data.addXValue(sensorData.getTimestamp() + "");
                 data.addEntry(new Entry(sensorData.getAcc(), set.getEntryCount()), datasetIndex);
             } else {
-                insertIndex = (int) (sensorData.getTimestamp()-timestampBase) % 50000000;
-                Log.i("KChart", "Index count: "+insertIndex);
-                data.addEntry(new Entry(sensorData.getTimestamp(), insertIndex), datasetIndex);
+                insertIndex = (int) Math.abs(sensorData.getTimestamp()-timestampBase) % 500;
+                Log.i("KChart", "Index count ("+sensorData.getTimestamp()+"-"+timestampBase+" = "+insertIndex);
+                data.addEntry(new Entry(sensorData.getAcc(), insertIndex), datasetIndex);
             }
 
             //data.addEntry(new Entry(sensorData.getAcc(), set.getEntryCount() + data.getDataSetByIndex(0).getEntryCount()), datasetIndex);
