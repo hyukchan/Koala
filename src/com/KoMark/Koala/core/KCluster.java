@@ -36,8 +36,7 @@ public class KCluster implements AccReadingListener {
         if (sensorData.getAcc() > 20) {
             //Sends data to master device
             if(koalaManager.kComm.isSlave()) {
-                //TODO: send only the last values instead of the whole data set
-                koalaManager.kComm.sendAccReadings(accReadings);
+                koalaManager.kComm.sendAccReadings((ArrayList<SensorData>) accReadings.subList(accReadings.size() - 20, accReadings.size() - 1));
             }
         }
     }

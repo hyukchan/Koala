@@ -10,6 +10,7 @@ import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 /**
@@ -38,8 +39,7 @@ public class KChart {
         lineChart.invalidate();
     }
 
-    public void addEntry(SensorData sensorData, String deviceName) { //called for remote data
-
+    public void addReceivedSensorDataPackage(ArrayList<SensorData> sensorDatas, String deviceName) {
         int deviceDatasetIndex;
         if(deviceDatasets.containsKey(deviceName)) {
             deviceDatasetIndex = deviceDatasets.get(deviceName);
@@ -48,9 +48,23 @@ public class KChart {
             deviceDatasetIndex = devicesetIndex;
             devicesetIndex++;
         }
-        addEntryToDataset(sensorData, deviceName, deviceDatasetIndex);
-    }
+        LineData data = lineChart.getData();
 
+        if(data != null) {
+            LineDataSet set = data.getDataSetByIndex(deviceDatasetIndex);
+
+            if (set == null) {
+                set = createSet(deviceName, Color.rgb(22, 99, 99));
+                data.addDataSet(set);
+            }
+
+
+
+            for(int i = 0; i < sensorDatas.size(); i++) {
+                data.addEntry(new Entry(sensorDatas.get(i).getAcc(), set.getEntryCount() - sensorDatas.size() + i), deviceDatasetIndex);
+            }
+        }
+    }
 
     public void addEntry(SensorData sensorData) { //Called by own device
         if(lineChart.getData().getXValCount() == 0) {
@@ -77,9 +91,7 @@ public class KChart {
                 data.addXValue(sensorData.getTimestamp() + "");
                 data.addEntry(new Entry(sensorData.getAcc(), set.getEntryCount()), datasetIndex);
             } else {
-                insertIndex = (int) Math.abs(sensorData.getTimestamp()-timestampBase) % 500;
-                Log.i("KChart", "Index count ("+sensorData.getTimestamp()+"-"+timestampBase+" = "+insertIndex);
-                data.addEntry(new Entry(sensorData.getAcc(), insertIndex), datasetIndex);
+                data.addEntry(new Entry(sensorData.getAcc(), set.getEntryCount()), datasetIndex);
             }
 
             //data.addEntry(new Entry(sensorData.getAcc(), set.getEntryCount() + data.getDataSetByIndex(0).getEntryCount()), datasetIndex);
