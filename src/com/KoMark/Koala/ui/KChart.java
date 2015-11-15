@@ -60,6 +60,7 @@ public class KChart {
 
             for(int i = 0; i < sensorDatas.size(); i++) {
                 data.addEntry(new Entry(sensorDatas.get(i).getAcc(), data.getDataSetByIndex(0).getEntryCount() - sensorDatas.size() + i), deviceDatasetIndex);
+                lineChart.notifyDataSetChanged();
             }
         }
     }
@@ -87,10 +88,9 @@ public class KChart {
             // add a new x-value first
             if(datasetIndex == 0) {
                 data.addXValue(sensorData.getTimestamp() + "");
-                data.addEntry(new Entry(sensorData.getAcc(), set.getEntryCount()), datasetIndex);
-            } else {
-                data.addEntry(new Entry(sensorData.getAcc(), set.getEntryCount()), datasetIndex);
             }
+
+            data.addEntry(new Entry(sensorData.getAcc(), set.getEntryCount()), datasetIndex);
 
             //data.addEntry(new Entry(sensorData.getAcc(), set.getEntryCount() + data.getDataSetByIndex(0).getEntryCount()), datasetIndex);
 
