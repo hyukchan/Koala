@@ -157,7 +157,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
         discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 1);
         discoverableIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        context.startActivity(discoverableIntent); // Ensures that the phone is no longer discoverable
+        //context.startActivity(discoverableIntent); // Ensures that the phone is no longer discoverable
         Log.i(CLASS_TAG, "Finish: Closing all connections.");
     }
 
