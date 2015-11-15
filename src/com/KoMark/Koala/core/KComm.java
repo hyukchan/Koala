@@ -28,6 +28,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
     private BluetoothAdapter mBluetoothAdapter;
     private KoalaManager kManager;
     private Set<BluetoothDevice> pairedDevices;
+    private ArrayList<BluetoothDevice> aliveDevices = new ArrayList<>();
     private long btMACValue;
     private Handler mHandler;
     private final String CLASS_TAG = "KComm";
@@ -42,9 +43,9 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
     public KComm(Context context) {
         mHandler = new Handler(this);
         this.context = context;
-        kManager = ((KoalaApplication) context).getKoalaManager();
+        kManager = ((KoalaApplication) context).getKoalaManager(); //Store context to koala manager
         IntentFilter btEnabledFilter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
-        ((KoalaApplication)context).registerReceiver(this, btEnabledFilter);
+        (context).registerReceiver(this, btEnabledFilter); //Register for bluetooth changes
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if(mBluetoothAdapter == null) {
             //Not supported. Must throw error.
@@ -73,12 +74,26 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 0);
         discoverableIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         context.startActivity(discoverableIntent);
-        //
-        IntentFilter btFoundDevice = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+
+        //Below code snippet enables scan for alive devices. If paired device is found, we can initiate connections
+        aliveDevices.clear();
+        IntentFilter btFoundDevice = new IntentFilter();
+        btFoundDevice.addAction(BluetoothDevice.ACTION_FOUND);
+        btFoundDevice.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
+        btFoundDevice.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+        (context).registerReceiver(this, btFoundDevice);
+        mBluetoothAdapter.startDiscovery();
+        /*
+
+
+
+
+         */
         String btMAC = mBluetoothAdapter.getAddress().replaceAll(":", "");
         btMACValue = Long.parseLong(btMAC, 16);
         Log.i("KComm", "BtMACVALUE = " + btMACValue);
         System.out.println("btMAC address: " + btMAC);
+        //pairedDevices.addAll(mBluetoothAdapter.getBondedDevices());
         pairedDevices = mBluetoothAdapter.getBondedDevices();
         BluetoothDevice master = null;
         boolean foundMaster = false;
@@ -142,7 +157,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
         discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 1);
         discoverableIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        context.startActivity(discoverableIntent); // Ensures that the phone is no longer discoverable
+        //context.startActivity(discoverableIntent); // Ensures that the phone is no longer discoverable
         Log.i(CLASS_TAG, "Finish: Closing all connections.");
     }
 
@@ -166,7 +181,22 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
             int extraState = (int) intent.getExtras().get(BluetoothAdapter.EXTRA_STATE);
             int previousState = (int) intent.getExtras().get(BluetoothAdapter.EXTRA_PREVIOUS_STATE);
             Log.i(CLASS_TAG, "Extras: "+extraState + " , "+previousState);
+            return;
         }
+        if(intent.getAction().equals(BluetoothDevice.ACTION_FOUND)) {
+            BluetoothDevice newDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+            Log.i(CLASS_TAG, "Found device: "+newDevice.getAddress()+". Is paired? : "+newDevice.getBondState());
+            aliveDevices.add(newDevice);
+            return;
+        }
+        if(intent.getAction().equals(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)) {
+            Log.i(CLASS_TAG, "Discovery finished.");
+            return;
+        }
+        if(intent.getAction().equals(BluetoothAdapter.ACTION_DISCOVERY_STARTED)) {
+            Log.i(CLASS_TAG, "Discovery initiated.");
+        }
+
 
 
     }
@@ -211,6 +241,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
                     mHandler.obtainMessage(1, sensorDataPackage).sendToTarget();
                 } catch(IOException e) {
                     e.printStackTrace();
+                    mHandler.obtainMessage(3, null).sendToTarget(); //IO exception, connection lost.
                     break;
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
