@@ -36,7 +36,7 @@ public class KCluster implements AccReadingListener {
         if (sensorData.getAcc() > 20) {
             //Sends data to master device
             if(koalaManager.kComm.isSlave()) {
-                koalaManager.kComm.sendAccReadings((ArrayList<SensorData>) accReadings.subList(accReadings.size() - 20, accReadings.size() - 1));
+                koalaManager.kComm.sendAccReadings(new ArrayList<SensorData>(accReadings.subList(accReadings.size() - 10, accReadings.size())));
             }
         }
     }
