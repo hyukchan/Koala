@@ -58,10 +58,8 @@ public class KChart {
                 data.addDataSet(set);
             }
 
-
-
             for(int i = 0; i < sensorDatas.size(); i++) {
-                data.addEntry(new Entry(sensorDatas.get(i).getAcc(), set.getEntryCount() - sensorDatas.size() + i), deviceDatasetIndex);
+                data.addEntry(new Entry(sensorDatas.get(i).getAcc(), data.getDataSetByIndex(0).getEntryCount() - sensorDatas.size() + i), deviceDatasetIndex);
             }
         }
     }
