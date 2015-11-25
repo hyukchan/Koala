@@ -18,6 +18,8 @@ public class KCluster implements AccReadingListener {
     ArrayList<SensorData> accReadings;
     ArrayList<SensorData> speedReadings;
 
+    long lastSentTimestamp = 0;
+
     public KCluster(Context context) {
         accReadings = new ArrayList<SensorData>();
         speedReadings = new ArrayList<SensorData>();
@@ -34,9 +36,13 @@ public class KCluster implements AccReadingListener {
 
         //FIXME: Sensitivity needs to be refined
         if (sensorData.getAcc() > 20) {
-            //Sends data to master device
-            if(koalaManager.kComm.isSlave()) {
-                koalaManager.kComm.sendAccReadings(new ArrayList<SensorData>(accReadings.subList(accReadings.size() - 10, accReadings.size())));
+            SensorData peakSensorData = accReadings.get(accReadings.size() - 1);
+            if(lastSentTimestamp == 0 || peakSensorData.getTimestamp() - lastSentTimestamp > 2000) {
+                //Sends data to master device
+                if(koalaManager.kComm.isSlave()) {
+                    koalaManager.kComm.sendAccReadings(new ArrayList<SensorData>(accReadings.subList(accReadings.size() - 10, accReadings.size())));
+                }
+                lastSentTimestamp = peakSensorData.getTimestamp();
             }
         }
     }
