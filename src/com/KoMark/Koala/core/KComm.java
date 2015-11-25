@@ -40,7 +40,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
     private ConnectedThread socketT;
 
     private ArrayList<SensorDataPackageReceiveListener> sensorDataPackageReceiveListeners;
-    private ArrayList<KCommListener> deviceFoundListeners;
+    private ArrayList<KCommListener> deviceFoundListeners = new ArrayList<>();
     private boolean debugFastConnectMode = true;
 
     public KComm(Context context) {
