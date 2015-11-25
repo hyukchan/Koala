@@ -13,6 +13,7 @@ import android.os.Message;
 import android.util.Log;
 
 import com.KoMark.Koala.KoalaApplication;
+import com.KoMark.Koala.core.listeners.KCommListener;
 import com.KoMark.Koala.core.listeners.SensorDataPackageReceiveListener;
 import com.KoMark.Koala.data.KProtocolMessage;
 import com.KoMark.Koala.data.SensorData;
@@ -27,7 +28,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
 
     private BluetoothAdapter mBluetoothAdapter;
     private KoalaManager kManager;
-    private Set<BluetoothDevice> pairedDevices;
+    private Set<BluetoothDevice> pairedDevices = new HashSet<>();
     private ArrayList<BluetoothDevice> aliveDevices = new ArrayList<>();
     private long btMACValue;
     private Handler mHandler;
@@ -39,6 +40,8 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
     private ConnectedThread socketT;
 
     private ArrayList<SensorDataPackageReceiveListener> sensorDataPackageReceiveListeners;
+    private ArrayList<KCommListener> deviceFoundListeners;
+    private boolean debugFastConnectMode = true;
 
     public KComm(Context context) {
         mHandler = new Handler(this);
@@ -56,9 +59,8 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
             context.startActivity(enableBt);
             // should ensure that bluetooth has been enabled by registering for a bluetooth state change
         } else {
-            setupBtNetwork();
+            scanForPeers();
         }
-        //setupBtNetwork();
         Log.i(CLASS_TAG, "End of constructor");
 
         sensorDataPackageReceiveListeners = new ArrayList<SensorDataPackageReceiveListener>();
@@ -68,33 +70,45 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         sensorDataPackageReceiveListeners.add(sensorDataPackageReceiveListener);
     }
 
-    private void setupBtNetwork() {
-        // Ensures that the phone is discoverable through BT indefinitely
-        Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-        discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 0);
-        discoverableIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        context.startActivity(discoverableIntent);
+    public void addKCommDeviceFoundListener(KCommListener listener) {
+        deviceFoundListeners.add(listener);
+    }
 
+    public void removeKCommDeviceFoundListener(KCommListener listener) {
+        deviceFoundListeners.remove(listener);
+    }
+
+    public boolean scanForPeers() {
+        // Ensures that the phone is discoverable through BT indefinitely
+        if(mBluetoothAdapter.getScanMode() != BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
+            Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
+            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 0);
+            discoverableIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(discoverableIntent);
+        }
+        if(mBluetoothAdapter.isDiscovering()) {
+            return false; //Already discovering, not going to initiate a new.
+        }
         //Below code snippet enables scan for alive devices. If paired device is found, we can initiate connections
         aliveDevices.clear();
         IntentFilter btFoundDevice = new IntentFilter();
         btFoundDevice.addAction(BluetoothDevice.ACTION_FOUND);
         btFoundDevice.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
         btFoundDevice.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+        btFoundDevice.addAction(BluetoothDevice.ACTION_ACL_CONNECTED);
+        btFoundDevice.addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED);
+        btFoundDevice.addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
         (context).registerReceiver(this, btFoundDevice);
         mBluetoothAdapter.startDiscovery();
-        /*
+        return true;
+    }
 
-
-
-
-         */
+    private void connectPeers() {
         String btMAC = mBluetoothAdapter.getAddress().replaceAll(":", "");
         btMACValue = Long.parseLong(btMAC, 16);
-        Log.i("KComm", "BtMACVALUE = " + btMACValue);
-        System.out.println("btMAC address: " + btMAC);
+        Log.i("KComm", "BtMACVALUE = " + btMACValue + ". Connecting to peers.");
         //pairedDevices.addAll(mBluetoothAdapter.getBondedDevices());
-        pairedDevices = mBluetoothAdapter.getBondedDevices();
+        //pairedDevices = mBluetoothAdapter.getBondedDevices();
         BluetoothDevice master = null;
         boolean foundMaster = false;
         if (pairedDevices.size() > 0) {
@@ -112,7 +126,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
             clientT = new ClientThread(master);
             clientT.start();
             isSlave = true;
-        } else {
+        } else { //No Master found. We will have to be master.
             Log.i("KComm", "Establishing server socket as a Master.");
             serverT = new ServerThread();
             serverT.start();
@@ -145,6 +159,14 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
                 }
                 Log.i("KComm", "Received message: " + (obj).toString());
                 break;
+            case 2:
+                break;
+            case 3:
+                scanForPeers();
+                break;
+            case 4:
+                scanForPeers();
+                break;
         }
         return false;
     }
@@ -158,16 +180,20 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 1);
         discoverableIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         //context.startActivity(discoverableIntent); // Ensures that the phone is no longer discoverable
-        Log.i(CLASS_TAG, "Finish: Closing all connections.");
+        Log.i(CLASS_TAG, "Finished closing all connections.");
     }
 
     /**
      * Send acceleration readings to master device
      * @param accReadings
      */
-    public void sendAccReadings(ArrayList<SensorData> accReadings) {
+    public boolean sendAccReadings(ArrayList<SensorData> accReadings) {
+        if(socketT == null) {
+            return false;
+        }
         KProtocolMessage kProtocolMessage = new KProtocolMessage(accReadings, KProtocolMessage.MT_DATA, mBluetoothAdapter.getName());
         socketT.writeObject(kProtocolMessage);
+        return true;
     }
 
     public boolean isSlave() {
@@ -183,22 +209,68 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
             Log.i(CLASS_TAG, "Extras: "+extraState + " , "+previousState);
             return;
         }
-        if(intent.getAction().equals(BluetoothDevice.ACTION_FOUND)) {
+        if(intent.getAction().equals(BluetoothDevice.ACTION_FOUND)) { //If new bt device found. Add to aliveDevices list.
             BluetoothDevice newDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-            Log.i(CLASS_TAG, "Found device: "+newDevice.getAddress()+". Is paired? : "+newDevice.getBondState());
+            Log.i(CLASS_TAG, "Found device: " + newDevice.getAddress() + ". Is paired? : " + newDevice.getBondState());
             aliveDevices.add(newDevice);
+            for (KCommListener aListener : deviceFoundListeners) {
+                aListener.onDeviceFound(newDevice);
+            }
+
+            if(newDevice.getBondState() == BluetoothDevice.BOND_BONDED) {
+                pairedDevices.add(newDevice);
+                if(debugFastConnectMode) {
+                    connectPeers();
+                }
+            }
             return;
         }
         if(intent.getAction().equals(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)) {
             Log.i(CLASS_TAG, "Discovery finished.");
+            for (KCommListener aListener : deviceFoundListeners) {
+                aListener.onStopScan();
+            }
+            connectPeers();
             return;
         }
         if(intent.getAction().equals(BluetoothAdapter.ACTION_DISCOVERY_STARTED)) {
             Log.i(CLASS_TAG, "Discovery initiated.");
+            for (KCommListener aListener : deviceFoundListeners) {
+                aListener.onStartScan();
+            }
         }
 
+        if(intent.getAction().equals(BluetoothDevice.ACTION_ACL_CONNECTED)) {
+            BluetoothDevice connectedDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+            Log.i(CLASS_TAG, "ACL connected to: "+connectedDevice.getName());
+            for (KCommListener aListener : deviceFoundListeners) {
+                aListener.onDeviceConnected(connectedDevice);
+            }
+        }
 
+        if(intent.getAction().equals(BluetoothDevice.ACTION_ACL_DISCONNECTED)) {
+            BluetoothDevice disconnectedDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+            Log.i(CLASS_TAG, "ACL disconnected from: "+disconnectedDevice.getAddress());
+            for (KCommListener aListener : deviceFoundListeners) {
+                aListener.onDeviceDisconnected(disconnectedDevice);
+            }
+        }
 
+        if(intent.getAction().equals(BluetoothDevice.ACTION_BOND_STATE_CHANGED)) {
+            BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+            if(intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, -1) == BluetoothDevice.BOND_BONDED) {
+                Log.i(CLASS_TAG, "Acquired bond to: " + device.getName());
+                for (KCommListener aListener : deviceFoundListeners) {
+                    aListener.onDevicePaired(device);
+                }
+            } else if (intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, -1) == BluetoothDevice.BOND_NONE &&
+                        intent.getIntExtra(BluetoothDevice.EXTRA_PREVIOUS_BOND_STATE, -1) == BluetoothDevice.BOND_BONDED) {
+                    Log.i(CLASS_TAG, "Prev bonded device now unbonded: " + device.getName());
+                for (KCommListener aListener : deviceFoundListeners) {
+                    aListener.onDeviceUnpaired(device);
+                }
+            }
+        }
     }
 
     private class ConnectedThread extends Thread {
@@ -207,7 +279,6 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         private final OutputStream mmOutStream;
         private final ObjectInputStream mmObjectInputStream;
         private final ObjectOutputStream mmObjectOutputStream;
-
 
         public ConnectedThread(BluetoothSocket socket) {
             mmSocket = socket;
@@ -342,6 +413,8 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
                 mmSocket.connect();
             } catch(IOException e) {
                 e.printStackTrace();
+                Log.i(CLASS_TAG, "Unable to create client socket. Retrying setup of network.");
+                mHandler.obtainMessage(4, null).sendToTarget(); //IO exception. Unable to connect.
                 try {
                     mmSocket.close();
                 } catch(IOException closeException) {
