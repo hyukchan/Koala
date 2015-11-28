@@ -47,7 +47,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
     private static final int MSG_SCAN_PERIOD = 4;
 
     private ArrayList<SensorDataPackageReceiveListener> sensorDataPackageReceiveListeners;
-    private ArrayList<KCommListener> deviceFoundListeners = new ArrayList<>();
+    private ArrayList<KCommListener> deviceFoundListeners = new ArrayList<KCommListener>();
     private boolean debugFastConnectMode = true;
 
     public KComm(Context context) {

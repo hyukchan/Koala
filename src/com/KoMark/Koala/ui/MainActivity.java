@@ -1,10 +1,10 @@
 package com.KoMark.Koala.ui;
 
 import android.app.Activity;
-import android.content.Context;
-import android.graphics.Color;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import com.KoMark.Koala.KoalaApplication;
 import com.KoMark.Koala.R;
 import com.KoMark.Koala.core.listeners.AccReadingListener;
@@ -21,7 +21,7 @@ public class MainActivity extends Activity implements AccReadingListener, Sensor
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.main);
+        setContentView(R.layout.activity_main);
         context = (KoalaApplication) getApplicationContext();
         context.getKoalaManager().kSensorManager.addAccReadingListener(this);
         context.getKoalaManager().kComm.addSensorDataPackageReceiveListener(this);
@@ -52,5 +52,11 @@ public class MainActivity extends Activity implements AccReadingListener, Sensor
     public void onSensorDataPackageReceive(ArrayList<SensorData> sensorDataPackage, String senderDeviceName) {
         kChart.addReceivedSensorDataPackage(sensorDataPackage, senderDeviceName);
         Log.i("MainActivity", "Receive sensor data package");
+    }
+
+    public void onClickKoalaNetworkTitle(View view) {
+        Intent intent = new Intent(this, ScanViewActivity.class);
+        startActivity(intent);
+
     }
 }
