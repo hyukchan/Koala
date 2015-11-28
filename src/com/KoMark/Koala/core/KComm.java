@@ -30,6 +30,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
     private KoalaManager kManager;
     private Set<BluetoothDevice> pairedDevices = new HashSet<>();
     private ArrayList<BluetoothDevice> aliveDevices = new ArrayList<>();
+    private ArrayList<ConnectedThread> socketList = new ArrayList<>();
     private long btMACValue;
     private Handler mHandler;
     private final String CLASS_TAG = "KComm";
@@ -38,6 +39,12 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
     private Context context;
     private boolean isSlave;
     private ConnectedThread socketT;
+    private BluetoothDevice currMaster;
+    private int connectedPeers = 0;
+    private static final int MSG_RECEIVED_PCKT = 1;
+    private static final int MSG_LOST_MASTER = 2;
+    private static final int MSG_LOST_SLAVE = 3;
+    private static final int MSG_SCAN_PERIOD = 4;
 
     private ArrayList<SensorDataPackageReceiveListener> sensorDataPackageReceiveListeners;
     private ArrayList<KCommListener> deviceFoundListeners = new ArrayList<>();
@@ -45,6 +52,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
 
     public KComm(Context context) {
         mHandler = new Handler(this);
+        mHandler.sendMessageDelayed(mHandler.obtainMessage(MSG_SCAN_PERIOD), 60000);
         this.context = context;
         kManager = ((KoalaApplication) context).getKoalaManager(); //Store context to koala manager
         IntentFilter btEnabledFilter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
@@ -59,7 +67,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
             context.startActivity(enableBt);
             // should ensure that bluetooth has been enabled by registering for a bluetooth state change
         } else {
-            scanForPeers();
+            scanForPeers(); //This also gets called when bluetooth is enabled
         }
         Log.i(CLASS_TAG, "End of constructor");
 
@@ -103,35 +111,69 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         return true;
     }
 
+    private void defineMaster() { //Redefines the master if a new device is found or old master connection is lost.
+        BluetoothDevice master = getMasterFromPairs();
+        if(master != null) {
+            if(currMaster == null || (currMaster != null && getMACLong(currMaster) < getMACLong(master))) {
+                    connectToMaster(master);
+            }
+        }
+    }
+
+    private void connectToMaster(BluetoothDevice master) {
+        if((currMaster != null && isSlave) || (socketT != null && socketT.isAlive())) { //If we have a master and we're a slave. Need to disconnect from master.
+            closeAllConnections(); //Close the connection.
+            Log.i(CLASS_TAG, "Disconnected from existing master: "+currMaster.getName());
+        }
+        Log.i(CLASS_TAG, "Connecting as a slave to Master: "+master.getAddress());
+        clientT = new ClientThread(master);
+        clientT.start();
+        currMaster = master;
+        isSlave = true;
+    }
+
+    private BluetoothDevice getMasterFromPairs() { //null is returned if no master is found
+        long maxMAC = btMACValue;
+        BluetoothDevice master = null;
+        for (BluetoothDevice pairedDevice : pairedDevices) {
+            if(getMACLong(pairedDevice) > maxMAC) {
+                master = pairedDevice;
+                maxMAC = getMACLong(master);
+            }
+        }
+        return master;
+    }
+
     private void connectPeers() {
         String btMAC = mBluetoothAdapter.getAddress().replaceAll(":", "");
         btMACValue = Long.parseLong(btMAC, 16);
         Log.i("KComm", "BtMACVALUE = " + btMACValue + ". Connecting to peers.");
         //pairedDevices.addAll(mBluetoothAdapter.getBondedDevices());
         //pairedDevices = mBluetoothAdapter.getBondedDevices();
-        BluetoothDevice master = null;
-        boolean foundMaster = false;
-        if (pairedDevices.size() > 0) {
-            long maxMAC = btMACValue;
-            for(BluetoothDevice aDevice : pairedDevices) {
-                if(getMACLong(aDevice) > maxMAC) {
-                    maxMAC = getMACLong(aDevice);
-                    master = aDevice;
-                    foundMaster = true;
-                }
+        BluetoothDevice master = getMasterFromPairs();
+        if(master != null) {
+            connectToMaster(master);
+        } else if(debugFastConnectMode) { //No Master found. We will have to be master. This should be setup at end of the scan.
+            for (BluetoothDevice pDevice : mBluetoothAdapter.getBondedDevices()) {
+                pairedDevices.add(pDevice);
+            }
+            master = getMasterFromPairs();
+            if(master != null) {
+                connectToMaster(master);
+            } else {
+                setupAsMaster();
             }
         }
-        if(foundMaster) {
-            Log.i("KComm", "Connecting as a slave to Master: "+master.getAddress());
-            clientT = new ClientThread(master);
-            clientT.start();
-            isSlave = true;
-        } else { //No Master found. We will have to be master.
+    }
+
+    private void setupAsMaster() { //Only setup if not connected to anything. To
+        if(serverT == null || (socketT != null && !socketT.mmSocket.isConnected())) { //TODO this gets called every time discovery ends. needs fixing.
             Log.i("KComm", "Establishing server socket as a Master.");
             serverT = new ServerThread();
             serverT.start();
             isSlave = false;
         }
+
     }
 
     private long getMACLong(BluetoothDevice device) {
@@ -148,7 +190,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         int what = inputMessage.what, arg1 = inputMessage.arg1, arg2 = inputMessage.arg2;
         Object obj = inputMessage.obj;
         switch(inputMessage.what) {
-            case 1:
+            case MSG_RECEIVED_PCKT: //Receiving a protocol message
                 if(obj instanceof KProtocolMessage) {
                     KProtocolMessage kProtocolMessage = (KProtocolMessage) obj;
                     ArrayList<SensorData> sensorDataPackage = kProtocolMessage.getSensorDatas();
@@ -159,12 +201,25 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
                 }
                 Log.i("KComm", "Received message: " + (obj).toString());
                 break;
-            case 2:
-                break;
-            case 3:
+            case MSG_LOST_MASTER: //should give an additional obj which is an instance of the ConnectedThread. Any reference to it should be removed.
+                //Lost connection to master. Try finding a replacement.
+                Log.i(CLASS_TAG, "MSG_LOST_MASTER");
+                socketT.cancel();
+                socketT = null;
+                currMaster = null;
                 scanForPeers();
+                connectedPeers--;
                 break;
-            case 4:
+            case MSG_LOST_SLAVE:
+                Log.i(CLASS_TAG, "MSG_LOST_SLAVE");
+                ConnectedThread socket = (ConnectedThread) obj;
+                socketList.remove(socket);
+                socket.cancel();
+                connectedPeers--;
+                break;
+            case MSG_SCAN_PERIOD:
+                Log.i(CLASS_TAG, "Scan period timer run out.");
+                mHandler.sendMessageDelayed(mHandler.obtainMessage(MSG_SCAN_PERIOD), 60000);
                 scanForPeers();
                 break;
         }
@@ -173,7 +228,8 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
 
     public void closeAllConnections() {
         Log.i(CLASS_TAG, "Start: Closing all connections.");
-        if(clientT != null) clientT.cancel();
+        connectedPeers = 0;
+        if(clientT != null) clientT.cancel(); //Both cancels will close the connectedThread socket
         if(serverT != null) serverT.cancel();
 
         Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
@@ -207,6 +263,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
             int extraState = (int) intent.getExtras().get(BluetoothAdapter.EXTRA_STATE);
             int previousState = (int) intent.getExtras().get(BluetoothAdapter.EXTRA_PREVIOUS_STATE);
             Log.i(CLASS_TAG, "Extras: "+extraState + " , "+previousState);
+            scanForPeers(); //Start scanning for peers as bluetooth has turned on.
             return;
         }
         if(intent.getAction().equals(BluetoothDevice.ACTION_FOUND)) { //If new bt device found. Add to aliveDevices list.
@@ -230,7 +287,9 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
             for (KCommListener aListener : deviceFoundListeners) {
                 aListener.onStopScan();
             }
-            connectPeers();
+            if(!isSlave) { //If a master has not been found at this point in time. Establish master socket.
+                setupAsMaster();
+            }
             return;
         }
         if(intent.getAction().equals(BluetoothAdapter.ACTION_DISCOVERY_STARTED)) {
@@ -243,6 +302,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         if(intent.getAction().equals(BluetoothDevice.ACTION_ACL_CONNECTED)) {
             BluetoothDevice connectedDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
             Log.i(CLASS_TAG, "ACL connected to: "+connectedDevice.getName());
+            connectedPeers++;
             for (KCommListener aListener : deviceFoundListeners) {
                 aListener.onDeviceConnected(connectedDevice);
             }
@@ -260,6 +320,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
             BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
             if(intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, -1) == BluetoothDevice.BOND_BONDED) {
                 Log.i(CLASS_TAG, "Acquired bond to: " + device.getName());
+                defineMaster(); //Changes master if new device has higher MAC address than curr master.
                 for (KCommListener aListener : deviceFoundListeners) {
                     aListener.onDevicePaired(device);
                 }
@@ -279,13 +340,15 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         private final OutputStream mmOutStream;
         private final ObjectInputStream mmObjectInputStream;
         private final ObjectOutputStream mmObjectOutputStream;
+        private final int lostMsg;
 
-        public ConnectedThread(BluetoothSocket socket) {
+        public ConnectedThread(BluetoothSocket socket, int lostMsg) {
             mmSocket = socket;
             InputStream tmpIn = null;
             OutputStream tmpOut = null;
             ObjectInputStream tmpObjIn = null;
             ObjectOutputStream tmpObjOut = null;
+            this.lostMsg = lostMsg;
 
             try {
                 tmpIn = socket.getInputStream();
@@ -309,22 +372,15 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
             while(true) {
                 try {
                     sensorDataPackage = mmObjectInputStream.readUnshared();
-                    mHandler.obtainMessage(1, sensorDataPackage).sendToTarget();
+                    mHandler.obtainMessage(MSG_RECEIVED_PCKT, sensorDataPackage).sendToTarget();
                 } catch(IOException e) {
                     e.printStackTrace();
-                    mHandler.obtainMessage(3, null).sendToTarget(); //IO exception, connection lost.
+                    mHandler.obtainMessage(lostMsg, this).sendToTarget(); //IO exception, connection lost.
                     break;
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
             }
-        }
-
-        //TODO: delete me
-        public void write(byte[] bytes) {
-            try {
-                mmOutStream.write(bytes);
-            } catch(IOException e) { }
         }
 
         public void writeObject(Object o) {
@@ -385,8 +441,9 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
 
         private void manageConnectedClient(BluetoothSocket socket) {
             Log.i("KComm", "Now connected to: "+socket.getRemoteDevice().getName());
-            socketT = new ConnectedThread(socket);
+            socketT = new ConnectedThread(socket, MSG_LOST_SLAVE);
             socketT.start();
+            socketList.add(socketT);
         }
 
 
@@ -414,7 +471,8 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
             } catch(IOException e) {
                 e.printStackTrace();
                 Log.i(CLASS_TAG, "Unable to create client socket. Retrying setup of network.");
-                mHandler.obtainMessage(4, null).sendToTarget(); //IO exception. Unable to connect.
+                //TODO Implement the case 5 message case in handler
+                mHandler.obtainMessage(5, null).sendToTarget(); //IO exception. Unable to connect.
                 try {
                     mmSocket.close();
                 } catch(IOException closeException) {
@@ -435,7 +493,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         }
 
         private void manageMasterConnection(BluetoothSocket mmSocket) {
-            socketT = new ConnectedThread(mmSocket);
+            socketT = new ConnectedThread(mmSocket, MSG_LOST_MASTER);
             socketT.start(); // Should store this thread somewhere so it can be closed correctly.
         }
     }
