@@ -45,7 +45,8 @@ public class ScanViewActivity extends Activity implements KCommListener {
             @Override
             public void run() {
                 bluetoothDevices.add(newDevice);
-                bluetoothDeviceAdapter.setList(bluetoothDevices);
+                //bluetoothDeviceAdapter.setList(bluetoothDevices);
+                bluetoothDeviceAdapter.add(newDevice);
                 bluetoothDeviceAdapter.notifyDataSetChanged();
             }
         });
