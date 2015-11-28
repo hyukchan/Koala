@@ -15,14 +15,14 @@ import java.util.ArrayList;
 /**
  * Created by Hyukchan on 28/11/2015.
  */
-public class BluetoothDeviceAdapter extends ArrayAdapter<BluetoothDevice> {
+public class ConnectedBluetoothDeviceAdapter extends ArrayAdapter<BluetoothDevice> {
     private final Context context;
-    private ArrayList<BluetoothDevice> bluetoothDevices;
+    private ArrayList<BluetoothDevice> connectedBluetoothDevices;
 
-    public BluetoothDeviceAdapter(Context context, ArrayList<BluetoothDevice> bluetoothDevices) {
+    public ConnectedBluetoothDeviceAdapter(Context context, ArrayList<BluetoothDevice> connectedBluetoothDevices) {
         super(context, R.layout.listitem_bluetoothdevice);
         this.context = context;
-        this.bluetoothDevices = bluetoothDevices;
+        this.connectedBluetoothDevices = connectedBluetoothDevices;
     }
 
     @Override
@@ -50,7 +50,7 @@ public class BluetoothDeviceAdapter extends ArrayAdapter<BluetoothDevice> {
         }
 
         // object item based on the position
-        BluetoothDevice bluetoothDevice = bluetoothDevices.get(position);
+        BluetoothDevice bluetoothDevice = connectedBluetoothDevices.get(position);
 
         // assign values if the object is not null
         if(bluetoothDevice != null) {
@@ -58,16 +58,11 @@ public class BluetoothDeviceAdapter extends ArrayAdapter<BluetoothDevice> {
             viewHolder.bluetoothDeviceName.setText(bluetoothDevice.getName());
             viewHolder.bluetoothDeviceName.setTag(bluetoothDevice.getAddress());
 
-            if(bluetoothDevice.getBondState() == BluetoothDevice.BOND_BONDED) {
-                viewHolder.bluetoothDeviceBondStatus.setVisibility(View.VISIBLE);
-            }
+            viewHolder.bluetoothDeviceBondStatus.setText("Connected");
+            viewHolder.bluetoothDeviceBondStatus.setVisibility(View.VISIBLE);
         }
 
         return convertView;
-    }
-
-    public void setList(ArrayList<BluetoothDevice> bluetoothDevices) {
-        this.bluetoothDevices = bluetoothDevices;
     }
 
     static class ViewHolderItem {

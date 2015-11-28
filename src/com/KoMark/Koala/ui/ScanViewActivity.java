@@ -3,6 +3,7 @@ package com.KoMark.Koala.ui;
 import android.app.Activity;
 import android.bluetooth.BluetoothDevice;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ListView;
 import com.KoMark.Koala.KoalaApplication;
 import com.KoMark.Koala.R;
@@ -15,9 +16,12 @@ import java.util.ArrayList;
  */
 public class ScanViewActivity extends Activity implements KCommListener {
 
-    ListView listView;
+    ListView bluetoothDevicesListView;
+    ListView connectedBluetoothDevicesListView;
     ArrayList<BluetoothDevice> bluetoothDevices = new ArrayList<>();
+    ArrayList<BluetoothDevice> connectedBluetoothDevices = new ArrayList<>();
     BluetoothDeviceAdapter bluetoothDeviceAdapter;
+    ConnectedBluetoothDeviceAdapter connectedBluetoothDeviceAdapter;
 
     KoalaApplication context;
 
@@ -26,57 +30,66 @@ public class ScanViewActivity extends Activity implements KCommListener {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_scanview);
 
-        listView = (ListView) findViewById(R.id.scanview_listview);
-
+        bluetoothDevicesListView = (ListView) findViewById(R.id.scanview_devices);
         bluetoothDeviceAdapter = new BluetoothDeviceAdapter(this, bluetoothDevices);
-        listView.setAdapter(bluetoothDeviceAdapter);
+        bluetoothDevicesListView.setAdapter(bluetoothDeviceAdapter);
+
+
+        connectedBluetoothDevicesListView = (ListView) findViewById(R.id.scanview_connecteddevices);
+        connectedBluetoothDeviceAdapter = new ConnectedBluetoothDeviceAdapter(this, connectedBluetoothDevices);
+        connectedBluetoothDevicesListView.setAdapter(connectedBluetoothDeviceAdapter);
 
         context = (KoalaApplication) getApplicationContext();
         context.getKoalaManager().kComm.addKCommListener(this);
-
-        context.getKoalaManager().kComm.scanForPeers();
     }
 
     @Override
     public void onDeviceFound(BluetoothDevice newDevice) {
+        addDevice(newDevice);
+    }
+
+    @Override
+    public void onDevicePaired(BluetoothDevice newDevice) {
+        addDevice(newDevice);
+    }
+
+    @Override
+    public void onDeviceConnected(BluetoothDevice newConnectedDevice) {
+        addConnectedDevice(newConnectedDevice);
+    }
+
+    public void addDevice(BluetoothDevice newDevice) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 bluetoothDevices.add(newDevice);
-                //bluetoothDeviceAdapter.setList(bluetoothDevices);
                 bluetoothDeviceAdapter.add(newDevice);
                 bluetoothDeviceAdapter.notifyDataSetChanged();
             }
         });
     }
 
-    @Override
-    public void onDevicePaired(BluetoothDevice newDevice) {
+    public void addConnectedDevice(BluetoothDevice newConnectedDevice) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                bluetoothDevices.add(newDevice);
-                bluetoothDeviceAdapter.setList(bluetoothDevices);
-                bluetoothDeviceAdapter.notifyDataSetChanged();
-            }
-        });
-    }
-
-    @Override
-    public void onDeviceConnected(BluetoothDevice newDevice) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                bluetoothDevices.add(newDevice);
-                bluetoothDeviceAdapter.setList(bluetoothDevices);
-                bluetoothDeviceAdapter.notifyDataSetChanged();
+                connectedBluetoothDevices.add(newConnectedDevice);
+                connectedBluetoothDeviceAdapter.add(newConnectedDevice);
+                connectedBluetoothDeviceAdapter.notifyDataSetChanged();
             }
         });
     }
 
     @Override
     public void onStartScan() {
+        //empty existing lists
+        /*bluetoothDevices = new ArrayList<>();
+        bluetoothDeviceAdapter = new BluetoothDeviceAdapter(this, bluetoothDevices);
+        bluetoothDeviceAdapter.notifyDataSetChanged();
 
+        connectedBluetoothDevices = new ArrayList<>();
+        connectedBluetoothDeviceAdapter = new ConnectedBluetoothDeviceAdapter(this, connectedBluetoothDevices);
+        connectedBluetoothDeviceAdapter.notifyDataSetChanged();*/
     }
 
     @Override
@@ -92,5 +105,9 @@ public class ScanViewActivity extends Activity implements KCommListener {
     @Override
     public void onDeviceUnpaired(BluetoothDevice device) {
 
+    }
+
+    public void onClickBackButton(View view) {
+        onBackPressed();
     }
 }
