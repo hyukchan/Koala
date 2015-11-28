@@ -12,12 +12,20 @@
             android:paddingTop="20dp"
             android:paddingBottom="20dp">
         <ImageView
-                android:id="@+id/koala_network_title"
-                android:layout_width="60dp"
-                android:layout_height="match_parent"
-                android:layout_alignParentLeft="true"
-                android:src="@drawable/button_back"
-                android:onClick="onClickBackButton"/>
+            android:id="@+id/scanview_backbutton"
+            android:layout_width="60dp"
+            android:layout_height="match_parent"
+            android:layout_alignParentLeft="true"
+            android:src="@drawable/button_back"
+            android:onClick="onClickBackButton"/>
+
+        <ImageView
+            android:id="@+id/scanview_refreshbutton"
+            android:layout_width="60dp"
+            android:layout_height="match_parent"
+            android:layout_alignParentRight="true"
+            android:src="@drawable/button_refresh"
+            android:onClick="onClickRefreshButton" />
     </RelativeLayout>
     <ListView
             android:id="@+id/scanview_connecteddevices"

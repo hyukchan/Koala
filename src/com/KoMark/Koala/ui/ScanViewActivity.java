@@ -110,4 +110,8 @@ public class ScanViewActivity extends Activity implements KCommListener {
     public void onClickBackButton(View view) {
         onBackPressed();
     }
+
+    public void onClickRefreshButton(View view) {
+
+    }
 }
