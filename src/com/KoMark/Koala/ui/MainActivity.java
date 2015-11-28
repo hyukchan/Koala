@@ -45,7 +45,6 @@ public class MainActivity extends Activity implements AccReadingListener, Sensor
     protected void onDestroy() {
         super.onDestroy();
         Log.i("MainActivity", "OnDestroy called");
-        context.onTerminate();
     }
 
     @Override

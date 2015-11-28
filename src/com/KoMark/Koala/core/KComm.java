@@ -301,22 +301,12 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
             scanForPeers(); //Start scanning for peers as bluetooth has turned on.
             return;
         }
-        if (BluetoothDevice.ACTION_UUID.equals(intent.getAction())) {
-            Log.i(CLASS_TAG, "UUID fetched.");
-            Parcelable[] uuidExtra = intent.getParcelableArrayExtra(BluetoothDevice.EXTRA_UUID);
-            for (Parcelable uuid : uuidExtra) {
-                Log.i(CLASS_TAG, "UUIDs fetched: "+uuid);
-            }
-
-            return;
-        }
         if(intent.getAction().equals(BluetoothDevice.ACTION_FOUND)) { //If new bt device found. Add to aliveDevices list.
             BluetoothDevice newDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-            newDevice.fetchUuidsWithSdp();
             Log.i(CLASS_TAG, "Found device: " + newDevice.getAddress() + ". Is paired? : " + newDevice.getBondState());
             aliveDevices.add(newDevice);
             for (ParcelUuid uuid : newDevice.getUuids()) {
-                Log.i(CLASS_TAG, "FoundDevice UUIDs: "+uuid);
+                Log.i(CLASS_TAG, "uuids: " + uuid);
             }
 
             for (KCommListener aListener : deviceFoundListeners) {
@@ -333,6 +323,10 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         }
         if(intent.getAction().equals(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)) {
             Log.i(CLASS_TAG, "Discovery finished.");
+            for (BluetoothDevice device : pairedDevices) {
+                device.fetchUuidsWithSdp();
+            }
+
             for (KCommListener aListener : deviceFoundListeners) {
                 aListener.onStopScan();
             }
@@ -349,22 +343,28 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
             return;
         }
 
+        if(BluetoothDevice.ACTION_UUID.equals(intent.getAction())) {
+            BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+            for (ParcelUuid uuid : device.getUuids()) {
+                Log.i(CLASS_TAG, "action uuid: "+uuid);
+            }
+        }
+
         if(intent.getAction().equals(BluetoothDevice.ACTION_ACL_CONNECTED)) {
             BluetoothDevice connectedDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
             Log.i(CLASS_TAG, "ACL connected to: "+connectedDevice.getName());
             connectedPeers++;
-            for (ParcelUuid uuid : connectedDevice.getUuids()) {
-                Log.i(CLASS_TAG, "UUID--- of connected device = "+uuid);
-                if(uuid.getUuid().toString().compareToIgnoreCase(KOALA_UUID) == 0) { //Is an actual KOALA peer
-                    Log.i(CLASS_TAG, "UUID of connected device = "+uuid);
-                    peerList.add(connectedDevice);
+            if(connectedDevice.getUuids() != null) {
+                for (ParcelUuid uuid : connectedDevice.getUuids()) {
+                    Log.i(CLASS_TAG, "UUID--- of connected device = " + uuid);
+                    if (uuid.getUuid().toString().compareToIgnoreCase(KOALA_UUID) == 0) { //Is an actual KOALA peer
+                        Log.i(CLASS_TAG, "UUID of connected device = " + uuid);
+                        peerList.add(connectedDevice);
+                    }
                 }
-
             }
 
-            for (KCommListener aListener : deviceFoundListeners) {
-                aListener.onDeviceConnected(connectedDevice);
-            }
+            //broadcastDeviceConnected(connectedDevice);
             return;
         }
 
@@ -397,6 +397,13 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         }
     }
 
+    private void broadcastDeviceConnected(BluetoothDevice connectedDevice) {
+        for (KCommListener aListener : deviceFoundListeners) {
+            aListener.onDeviceConnected(connectedDevice);
+        }
+        return;
+    }
+
     private class ConnectedThread extends Thread {
         private final BluetoothSocket mmSocket;
         private final InputStream mmInStream;
@@ -404,14 +411,16 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         private final ObjectInputStream mmObjectInputStream;
         private final ObjectOutputStream mmObjectOutputStream;
         private final int lostMsg;
+        private final BluetoothDevice remoteDevice;
 
-        public ConnectedThread(BluetoothSocket socket, int lostMsg) {
+        public ConnectedThread(BluetoothSocket socket, int lostMsg, BluetoothDevice remoteDevice) {
             mmSocket = socket;
             InputStream tmpIn = null;
             OutputStream tmpOut = null;
             ObjectInputStream tmpObjIn = null;
             ObjectOutputStream tmpObjOut = null;
             this.lostMsg = lostMsg;
+            this.remoteDevice = remoteDevice;
 
             try {
                 tmpIn = socket.getInputStream();
@@ -506,7 +515,8 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
 
         private void manageConnectedClient(BluetoothSocket socket) {
             Log.i(CLASS_TAG, "Now connected to: "+socket.getRemoteDevice().getName());
-            socketT = new ConnectedThread(socket, MSG_LOST_SLAVE);
+            broadcastDeviceConnected(socket.getRemoteDevice());
+            socketT = new ConnectedThread(socket, MSG_LOST_SLAVE, socket.getRemoteDevice());
             socketT.start();
             socketList.add(socketT);
             Log.i(CLASS_TAG, "Size of socket list: "+socketList.size());
@@ -559,7 +569,8 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         }
 
         private void manageMasterConnection(BluetoothSocket mmSocket) {
-            socketT = new ConnectedThread(mmSocket, MSG_LOST_MASTER);
+            broadcastDeviceConnected(mmSocket.getRemoteDevice());
+            socketT = new ConnectedThread(mmSocket, MSG_LOST_MASTER, mmSocket.getRemoteDevice());
             socketT.start(); // Should store this thread somewhere so it can be closed correctly.
         }
     }
