@@ -15,6 +15,7 @@ public class KProtocolMessage implements Serializable {
     public final static int MT_DATA = 11;
 
     private int messageType;
+    private int dataType;
     private ArrayList<SensorData> sensorDatas;
     private ArrayList<KGroupData> groupData;
 
@@ -25,10 +26,11 @@ public class KProtocolMessage implements Serializable {
     }
 
 
-    public KProtocolMessage(ArrayList<SensorData> sensorDatas, int messageType, String senderDeviceName) {
+    public KProtocolMessage(ArrayList<SensorData> sensorDatas, int messageType, int dataType, String senderDeviceName) {
         this.sensorDatas = sensorDatas;
         this.messageType = messageType;
         this.senderDeviceName = senderDeviceName;
+        this.dataType = dataType;
     }
 
     public String getSenderDeviceName() {
@@ -60,5 +62,9 @@ public class KProtocolMessage implements Serializable {
     public KProtocolMessage setGroupData(ArrayList<KGroupData> groupData) {
         this.groupData = groupData;
         return this;
+    }
+
+    public int getDataType() {
+        return dataType;
     }
 }
