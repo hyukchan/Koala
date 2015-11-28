@@ -11,6 +11,7 @@ import android.content.IntentFilter;
 import android.os.Handler;
 import android.os.Message;
 import android.os.ParcelUuid;
+import android.os.Parcelable;
 import android.util.Log;
 
 import com.KoMark.Koala.KoalaApplication;
@@ -111,6 +112,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         btFoundDevice.addAction(BluetoothDevice.ACTION_ACL_CONNECTED);
         btFoundDevice.addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED);
         btFoundDevice.addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
+        btFoundDevice.addAction(BluetoothDevice.ACTION_UUID);
         (context).registerReceiver(this, btFoundDevice);
         mBluetoothAdapter.startDiscovery();
         return true;
@@ -299,8 +301,18 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
             scanForPeers(); //Start scanning for peers as bluetooth has turned on.
             return;
         }
+        if (BluetoothDevice.ACTION_UUID.equals(intent.getAction())) {
+            Log.i(CLASS_TAG, "UUID fetched.");
+            Parcelable[] uuidExtra = intent.getParcelableArrayExtra(BluetoothDevice.EXTRA_UUID);
+            for (Parcelable uuid : uuidExtra) {
+                Log.i(CLASS_TAG, "UUIDs fetched: "+uuid);
+            }
+
+            return;
+        }
         if(intent.getAction().equals(BluetoothDevice.ACTION_FOUND)) { //If new bt device found. Add to aliveDevices list.
             BluetoothDevice newDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+            newDevice.fetchUuidsWithSdp();
             Log.i(CLASS_TAG, "Found device: " + newDevice.getAddress() + ". Is paired? : " + newDevice.getBondState());
             aliveDevices.add(newDevice);
             for (ParcelUuid uuid : newDevice.getUuids()) {
@@ -512,7 +524,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
             mmDevice = device;
 
             try {
-                tmp = mmDevice.createRfcommSocketToServiceRecord(UUID.fromString("e519c52c-81fb-11e5-8bcf-feff819cdc9f"));
+                tmp = mmDevice.createRfcommSocketToServiceRecord(UUID.fromString(KOALA_UUID));
             } catch (IOException e) {
                 e.printStackTrace();
             }
