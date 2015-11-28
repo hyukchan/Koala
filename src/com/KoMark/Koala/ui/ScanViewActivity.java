@@ -3,8 +3,6 @@ package com.KoMark.Koala.ui;
 import android.app.Activity;
 import android.bluetooth.BluetoothDevice;
 import android.os.Bundle;
-import android.widget.ArrayAdapter;
-import android.widget.ListAdapter;
 import android.widget.ListView;
 import com.KoMark.Koala.KoalaApplication;
 import com.KoMark.Koala.R;
@@ -34,7 +32,7 @@ public class ScanViewActivity extends Activity implements KCommListener {
         listView.setAdapter(bluetoothDeviceAdapter);
 
         context = (KoalaApplication) getApplicationContext();
-        context.getKoalaManager().kComm.addKCommDeviceFoundListener(this);
+        context.getKoalaManager().kComm.addKCommListener(this);
 
         context.getKoalaManager().kComm.scanForPeers();
     }
