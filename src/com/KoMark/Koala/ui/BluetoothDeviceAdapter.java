@@ -50,6 +50,7 @@ public class BluetoothDeviceAdapter extends ArrayAdapter<BluetoothDevice> {
         }
 
         // object item based on the position
+
         BluetoothDevice bluetoothDevice = bluetoothDevices.get(position);
 
         // assign values if the object is not null
@@ -68,6 +69,10 @@ public class BluetoothDeviceAdapter extends ArrayAdapter<BluetoothDevice> {
 
     public void setList(ArrayList<BluetoothDevice> bluetoothDevices) {
         this.bluetoothDevices = bluetoothDevices;
+    }
+
+    public void emptyList() {
+        bluetoothDevices.clear();
     }
 
     static class ViewHolderItem {

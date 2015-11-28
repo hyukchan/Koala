@@ -2,7 +2,9 @@ package com.KoMark.Koala.ui;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothDevice;
+import android.content.Context;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ListView;
 import com.KoMark.Koala.KoalaApplication;
@@ -22,8 +24,8 @@ public class ScanViewActivity extends Activity implements KCommListener {
     ArrayList<BluetoothDevice> connectedBluetoothDevices = new ArrayList<>();
     BluetoothDeviceAdapter bluetoothDeviceAdapter;
     ConnectedBluetoothDeviceAdapter connectedBluetoothDeviceAdapter;
-
-    KoalaApplication context;
+    KoalaApplication koalaApplication;
+    Context context;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -34,18 +36,26 @@ public class ScanViewActivity extends Activity implements KCommListener {
         bluetoothDeviceAdapter = new BluetoothDeviceAdapter(this, bluetoothDevices);
         bluetoothDevicesListView.setAdapter(bluetoothDeviceAdapter);
 
-
+        context = this;
         connectedBluetoothDevicesListView = (ListView) findViewById(R.id.scanview_connecteddevices);
         connectedBluetoothDeviceAdapter = new ConnectedBluetoothDeviceAdapter(this, connectedBluetoothDevices);
         connectedBluetoothDevicesListView.setAdapter(connectedBluetoothDeviceAdapter);
 
-        context = (KoalaApplication) getApplicationContext();
-        context.getKoalaManager().kComm.addKCommListener(this);
+        koalaApplication = (KoalaApplication) getApplicationContext();
+        koalaApplication.getKoalaManager().kComm.addKCommListener(this);
     }
 
     @Override
     public void onDeviceFound(BluetoothDevice newDevice) {
-        addDevice(newDevice);
+        Log.i("ScanViewActivity", "Device found!"+newDevice.getName());
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                bluetoothDevices.add(newDevice);
+                bluetoothDeviceAdapter.add(newDevice);
+                bluetoothDeviceAdapter.notifyDataSetChanged();
+            }
+        });
     }
 
     @Override
@@ -55,6 +65,7 @@ public class ScanViewActivity extends Activity implements KCommListener {
 
     @Override
     public void onDeviceConnected(BluetoothDevice newConnectedDevice) {
+        Log.i("ScanViewActivity", "Device connected!"+newConnectedDevice.getName());
         addConnectedDevice(newConnectedDevice);
     }
 
@@ -82,14 +93,27 @@ public class ScanViewActivity extends Activity implements KCommListener {
 
     @Override
     public void onStartScan() {
+        Log.i("ScanViewActivity", "OnStartScan...");
         //empty existing lists
-        /*bluetoothDevices = new ArrayList<>();
-        bluetoothDeviceAdapter = new BluetoothDeviceAdapter(this, bluetoothDevices);
-        bluetoothDeviceAdapter.notifyDataSetChanged();
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                bluetoothDevices = new ArrayList<>();
+                bluetoothDeviceAdapter.emptyList();
+                bluetoothDeviceAdapter = new BluetoothDeviceAdapter(context, bluetoothDevices);
+                bluetoothDeviceAdapter.notifyDataSetChanged();
+                bluetoothDevicesListView.setAdapter(bluetoothDeviceAdapter);
+                connectedBluetoothDevices = new ArrayList<>();
+                connectedBluetoothDeviceAdapter = new ConnectedBluetoothDeviceAdapter(context, connectedBluetoothDevices);
+                connectedBluetoothDeviceAdapter.notifyDataSetChanged();
+                connectedBluetoothDevicesListView.setAdapter(connectedBluetoothDeviceAdapter);
+            }
+        });
+        for (BluetoothDevice peer : koalaApplication.getKoalaManager().kComm.getPeerList()) {
+            addConnectedDevice(peer);
+        }
 
-        connectedBluetoothDevices = new ArrayList<>();
-        connectedBluetoothDeviceAdapter = new ConnectedBluetoothDeviceAdapter(this, connectedBluetoothDevices);
-        connectedBluetoothDeviceAdapter.notifyDataSetChanged();*/
+
     }
 
     @Override
@@ -112,6 +136,7 @@ public class ScanViewActivity extends Activity implements KCommListener {
     }
 
     public void onClickRefreshButton(View view) {
+        koalaApplication.getKoalaManager().kComm.scanForPeers();
 
     }
 }

@@ -50,6 +50,7 @@ public class ConnectedBluetoothDeviceAdapter extends ArrayAdapter<BluetoothDevic
         }
 
         // object item based on the position
+
         BluetoothDevice bluetoothDevice = connectedBluetoothDevices.get(position);
 
         // assign values if the object is not null
@@ -63,6 +64,10 @@ public class ConnectedBluetoothDeviceAdapter extends ArrayAdapter<BluetoothDevic
         }
 
         return convertView;
+    }
+
+    public void emptyList() {
+        connectedBluetoothDevices.clear();
     }
 
     static class ViewHolderItem {

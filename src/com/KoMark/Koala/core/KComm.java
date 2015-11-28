@@ -56,7 +56,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
 
     public KComm(Context context) {
         mHandler = new Handler(this);
-        mHandler.sendMessageDelayed(mHandler.obtainMessage(MSG_SCAN_PERIOD), 60000);
+        //mHandler.sendMessageDelayed(mHandler.obtainMessage(MSG_SCAN_PERIOD), 60000);
         this.context = context;
         kManager = ((KoalaApplication) context).getKoalaManager(); //Store context to koala manager
         IntentFilter btEnabledFilter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
@@ -79,12 +79,20 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         sensorDataPackageReceiveListeners = new ArrayList<>();
     }
 
+    public ArrayList<BluetoothDevice> getPeerList() {
+        return peerList;
+    }
+
     public void addSensorDataPackageReceiveListener(SensorDataPackageReceiveListener sensorDataPackageReceiveListener) {
         sensorDataPackageReceiveListeners.add(sensorDataPackageReceiveListener);
     }
 
     public void addKCommListener(KCommListener listener) {
         deviceFoundListeners.add(listener);
+        for (BluetoothDevice peer : peerList) {
+            listener.onDeviceConnected(peer);
+        }
+
     }
 
     public void removeKCommListener(KCommListener listener) {
@@ -305,9 +313,12 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
             BluetoothDevice newDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
             Log.i(CLASS_TAG, "Found device: " + newDevice.getAddress() + ". Is paired? : " + newDevice.getBondState());
             aliveDevices.add(newDevice);
-            for (ParcelUuid uuid : newDevice.getUuids()) {
-                Log.i(CLASS_TAG, "uuids: " + uuid);
+            if(newDevice.getUuids() != null) {
+                for (ParcelUuid uuid : newDevice.getUuids()) {
+                    Log.i(CLASS_TAG, "uuids: " + uuid);
+                }
             }
+
 
             for (KCommListener aListener : deviceFoundListeners) {
                 aListener.onDeviceFound(newDevice);
@@ -324,7 +335,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         if(intent.getAction().equals(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)) {
             Log.i(CLASS_TAG, "Discovery finished.");
             for (BluetoothDevice device : pairedDevices) {
-                device.fetchUuidsWithSdp();
+                //device.fetchUuidsWithSdp();
             }
 
             for (KCommListener aListener : deviceFoundListeners) {
@@ -359,7 +370,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
                     Log.i(CLASS_TAG, "UUID--- of connected device = " + uuid);
                     if (uuid.getUuid().toString().compareToIgnoreCase(KOALA_UUID) == 0) { //Is an actual KOALA peer
                         Log.i(CLASS_TAG, "UUID of connected device = " + uuid);
-                        peerList.add(connectedDevice);
+                        //peerList.add(connectedDevice);
                     }
                 }
             }
@@ -371,7 +382,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         if(intent.getAction().equals(BluetoothDevice.ACTION_ACL_DISCONNECTED)) {
             BluetoothDevice disconnectedDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
             Log.i(CLASS_TAG, "ACL disconnected from: "+disconnectedDevice.getAddress());
-            Log.i(CLASS_TAG, "Removing device ret: "+peerList.remove(disconnectedDevice));
+            Log.i(CLASS_TAG, "Removing device ret: " + peerList.remove(disconnectedDevice));
             for (KCommListener aListener : deviceFoundListeners) {
                 aListener.onDeviceDisconnected(disconnectedDevice);
             }
@@ -421,6 +432,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
             ObjectOutputStream tmpObjOut = null;
             this.lostMsg = lostMsg;
             this.remoteDevice = remoteDevice;
+            peerList.add(remoteDevice);
 
             try {
                 tmpIn = socket.getInputStream();
@@ -543,6 +555,9 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
 
         public void run() {
             try {
+                if(mmSocket == null) {
+                    Log.i(CLASS_TAG, "What the hell. mmSocket is null!?");
+                }
                 mmSocket.connect();
             } catch(IOException e) {
                 e.printStackTrace();
