@@ -1,6 +1,8 @@
 package com.KoMark.Koala;
 
 import android.app.Application;
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
@@ -20,7 +22,6 @@ public class KoalaApplication extends Application {
     public void onCreate() {
         super.onCreate();
         context = this;
-
         koalaManager = new KoalaManager();
         koalaManager.initializeComponents(this);
 

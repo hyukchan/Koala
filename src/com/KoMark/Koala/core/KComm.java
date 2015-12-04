@@ -21,6 +21,7 @@ import com.KoMark.Koala.data.KProtocolMessage;
 import com.KoMark.Koala.data.SensorData;
 
 import java.io.*;
+import java.lang.reflect.Method;
 import java.util.*;
 
 /**
@@ -77,6 +78,17 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         Log.i(CLASS_TAG, "End of constructor");
 
         sensorDataPackageReceiveListeners = new ArrayList<>();
+    }
+
+    public boolean pairWithDevice(BluetoothDevice device) {
+        try{
+            Log.i(CLASS_TAG, "Creating bond");
+            Method m = device.getClass().getMethod("createBond", (Class[]) null);
+            m.invoke(device, (Object []) null);
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+        return true;
     }
 
     public ArrayList<BluetoothDevice> getPeerList() {
