@@ -21,17 +21,18 @@ public class KoalaApplication extends Application {
         super.onCreate();
         context = this;
 
-        koalaManager = new KoalaManager();
-        koalaManager.initializeComponents(this);
-
-        startService(new Intent(this, KoalaService.class));
+        if(koalaManager == null) {
+            koalaManager = new KoalaManager();
+            koalaManager.initializeComponents(this);
+            startService(new Intent(this, KoalaService.class));
+        }
     }
 
     @Override
     public void onTerminate() {
         super.onTerminate();
         Log.i("KApplication", "OnTerminate called");
-        koalaManager.shutdown();
+        //koalaManager.shutdown();
     }
 
     public KoalaManager getKoalaManager() {

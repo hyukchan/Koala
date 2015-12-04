@@ -26,6 +26,11 @@ public class KoalaService extends Service {
     }
 
     @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        return super.onStartCommand(intent, flags, startId);
+    }
+
+    @Override
     public void onDestroy() {
         super.onDestroy();
         unregisterReceiver(koalaManager.kComm);
