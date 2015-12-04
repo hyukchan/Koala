@@ -46,20 +46,22 @@ public class ScanViewActivity extends Activity implements KCommListener {
     }
 
     @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        koalaApplication = (KoalaApplication) getApplicationContext();
+        koalaApplication.getKoalaManager().kComm.removeKCommListener(this);
+    }
+
+    @Override
     public void onDeviceFound(BluetoothDevice newDevice) {
         Log.i("ScanViewActivity", "Device found!"+newDevice.getName());
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                bluetoothDevices.add(newDevice);
-                bluetoothDeviceAdapter.add(newDevice);
-                bluetoothDeviceAdapter.notifyDataSetChanged();
-            }
-        });
+        addDevice(newDevice);
     }
 
     @Override
     public void onDevicePaired(BluetoothDevice newDevice) {
+        Log.i("ScanViewActivity", "Device Paired!"+newDevice.getName());
         addDevice(newDevice);
     }
 
@@ -73,9 +75,11 @@ public class ScanViewActivity extends Activity implements KCommListener {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                bluetoothDevices.add(newDevice);
-                bluetoothDeviceAdapter.add(newDevice);
-                bluetoothDeviceAdapter.notifyDataSetChanged();
+                if(!isDeviceAlreadyFound(newDevice) && !isDeviceAlreadyConnected(newDevice)) {
+                    bluetoothDevices.add(newDevice);
+                    bluetoothDeviceAdapter.add(newDevice);
+                    bluetoothDeviceAdapter.notifyDataSetChanged();
+                }
             }
         });
     }
@@ -84,6 +88,17 @@ public class ScanViewActivity extends Activity implements KCommListener {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                int index = 0;
+                for (BluetoothDevice bluetoothDevice : bluetoothDevices) {
+                    if(bluetoothDevice.getAddress().equals(newConnectedDevice.getAddress())) {
+                        bluetoothDevices.remove(index);
+                        bluetoothDeviceAdapter.remove(bluetoothDeviceAdapter.getItem(index));
+                        bluetoothDeviceAdapter.notifyDataSetChanged();
+                        break;
+                    }
+                    index++;
+                }
+
                 connectedBluetoothDevices.add(newConnectedDevice);
                 connectedBluetoothDeviceAdapter.add(newConnectedDevice);
                 connectedBluetoothDeviceAdapter.notifyDataSetChanged();
@@ -138,5 +153,29 @@ public class ScanViewActivity extends Activity implements KCommListener {
     public void onClickRefreshButton(View view) {
         koalaApplication.getKoalaManager().kComm.scanForPeers();
 
+    }
+
+    public boolean isDeviceAlreadyFound(BluetoothDevice bluetoothDevice) {
+        Boolean alreadyFound = false;
+        for(BluetoothDevice _bluetoothDevice : bluetoothDevices) {
+            if(_bluetoothDevice.getAddress().equals(bluetoothDevice.getAddress())) {
+                alreadyFound = true;
+                break;
+            }
+        }
+
+        return alreadyFound;
+    }
+
+    public boolean isDeviceAlreadyConnected(BluetoothDevice bluetoothDevice) {
+        Boolean connected = false;
+        for (BluetoothDevice connectedBluetoothDevice : connectedBluetoothDevices) {
+            if(connectedBluetoothDevice.getAddress().equals(bluetoothDevice.getAddress())) {
+                connected = true;
+                break;
+            }
+        }
+
+        return connected;
     }
 }
