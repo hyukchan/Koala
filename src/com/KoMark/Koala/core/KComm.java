@@ -73,7 +73,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
             context.startActivity(enableBt);
             // should ensure that bluetooth has been enabled by registering for a bluetooth state change
         } else {
-            scanForPeers(); //This also gets called when bluetooth is enabled
+            //scanForPeers(); //This also gets called when bluetooth is enabled
         }
         Log.i(CLASS_TAG, "End of constructor");
 

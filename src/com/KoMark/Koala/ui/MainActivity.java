@@ -23,8 +23,7 @@ public class MainActivity extends Activity implements AccReadingListener, Sensor
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         context = (KoalaApplication) getApplicationContext();
-        context.getKoalaManager().kSensorManager.addAccReadingListener(this);
-        context.getKoalaManager().kComm.addSensorDataPackageReceiveListener(this);
+        context.setActivityContext(this);
 
         LineChart lineChart = (LineChart) findViewById(R.id.chart);
 
@@ -58,5 +57,10 @@ public class MainActivity extends Activity implements AccReadingListener, Sensor
         Intent intent = new Intent(this, ScanViewActivity.class);
         startActivity(intent);
 
+    }
+
+    public void setListeners() {
+        context.getKoalaManager().kSensorManager.addAccReadingListener(this);
+        context.getKoalaManager().kComm.addSensorDataPackageReceiveListener(this);
     }
 }
