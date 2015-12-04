@@ -6,7 +6,9 @@ import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import com.KoMark.Koala.KoalaApplication;
 import com.KoMark.Koala.R;
 import com.KoMark.Koala.core.listeners.KCommListener;
@@ -27,6 +29,9 @@ public class ScanViewActivity extends Activity implements KCommListener {
     KoalaApplication koalaApplication;
     Context context;
 
+    ImageView refreshButton;
+    ProgressBar refreshSpinner;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -43,6 +48,9 @@ public class ScanViewActivity extends Activity implements KCommListener {
 
         koalaApplication = (KoalaApplication) getApplicationContext();
         koalaApplication.getKoalaManager().kComm.addKCommListener(this);
+
+        refreshButton = (ImageView) findViewById(R.id.scanview_refreshbutton);
+        refreshSpinner = (ProgressBar) findViewById(R.id.scanview_refreshspinner);
     }
 
     @Override
@@ -75,13 +83,28 @@ public class ScanViewActivity extends Activity implements KCommListener {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                if(!isDeviceAlreadyFound(newDevice) && !isDeviceAlreadyConnected(newDevice)) {
-                    bluetoothDevices.add(newDevice);
-                    bluetoothDeviceAdapter.add(newDevice);
-                    bluetoothDeviceAdapter.notifyDataSetChanged();
+
+                if(!isDeviceAlreadyConnected(newDevice)) {
+                    if(!isDeviceAlreadyFound(newDevice)) {
+                        bluetoothDevices.add(newDevice);
+                        bluetoothDeviceAdapter.add(newDevice);
+                        bluetoothDeviceAdapter.notifyDataSetChanged();
+                    } else {
+                        int position = bluetoothDeviceAdapter.getItemPosition(newDevice);
+                        updateView(position);
+                    }
                 }
             }
         });
+    }
+
+    public void updateView(int index) {
+        View v = bluetoothDevicesListView.getChildAt(index - bluetoothDevicesListView.getFirstVisiblePosition());
+
+        if(v == null)
+            return;
+
+        v.findViewById(R.id.bluetoothdevice_bondstatus).setVisibility(View.VISIBLE);
     }
 
     public void addConnectedDevice(BluetoothDevice newConnectedDevice) {
@@ -128,12 +151,14 @@ public class ScanViewActivity extends Activity implements KCommListener {
             addConnectedDevice(peer);
         }
 
-
+        refreshButton.setVisibility(View.GONE);
+        refreshSpinner.setVisibility(View.VISIBLE);
     }
 
     @Override
     public void onStopScan() {
-
+        refreshButton.setVisibility(View.VISIBLE);
+        refreshSpinner.setVisibility(View.GONE);
     }
 
     @Override

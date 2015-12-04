@@ -19,6 +19,14 @@
             android:src="@drawable/button_back"
             android:onClick="onClickBackButton"/>
 
+        <ProgressBar
+                android:id="@+id/scanview_refreshspinner"
+                android:layout_width="60dp"
+                android:layout_height="match_parent"
+                android:layout_alignParentRight="true"
+                android:visibility="gone"
+                />
+
         <ImageView
             android:id="@+id/scanview_refreshbutton"
             android:layout_width="60dp"

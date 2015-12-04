@@ -8,6 +8,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
+import com.KoMark.Koala.KoalaApplication;
 import com.KoMark.Koala.R;
 
 import java.util.ArrayList;
@@ -29,7 +30,7 @@ public class BluetoothDeviceAdapter extends ArrayAdapter<BluetoothDevice> {
     public View getView(int position, View convertView, ViewGroup parent) {
         ViewHolderItem viewHolder;
 
-        if(convertView==null){
+        if (convertView == null) {
 
             // inflate the layout
             LayoutInflater inflater = ((Activity) context).getLayoutInflater();
@@ -43,7 +44,7 @@ public class BluetoothDeviceAdapter extends ArrayAdapter<BluetoothDevice> {
             // store the holder with the view.
             convertView.setTag(viewHolder);
 
-        }else{
+        } else {
             // we've just avoided calling findViewById() on resource everytime
             // just use the viewHolder
             viewHolder = (ViewHolderItem) convertView.getTag();
@@ -54,21 +55,34 @@ public class BluetoothDeviceAdapter extends ArrayAdapter<BluetoothDevice> {
         BluetoothDevice bluetoothDevice = bluetoothDevices.get(position);
 
         // assign values if the object is not null
-        if(bluetoothDevice != null) {
+        if (bluetoothDevice != null) {
             // get the TextView from the ViewHolder and then set the text (item name) and tag (item ID) values
             viewHolder.bluetoothDeviceName.setText(bluetoothDevice.getName());
             viewHolder.bluetoothDeviceName.setTag(bluetoothDevice.getAddress());
 
-            if(bluetoothDevice.getBondState() == BluetoothDevice.BOND_BONDED) {
+            if (bluetoothDevice.getBondState() == BluetoothDevice.BOND_BONDED) {
                 viewHolder.bluetoothDeviceBondStatus.setVisibility(View.VISIBLE);
+            } else {
+                convertView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        ((KoalaApplication) context.getApplicationContext()).getKoalaManager().kComm.pairWithDevice(bluetoothDevice);
+                    }
+                });
             }
         }
 
         return convertView;
     }
 
-    public void setList(ArrayList<BluetoothDevice> bluetoothDevices) {
-        this.bluetoothDevices = bluetoothDevices;
+    public int getItemPosition(BluetoothDevice bluetoothDevice) {
+        int i;
+        for (i = 0; i < bluetoothDevices.size(); i++) {
+            if (bluetoothDevices.get(i).getAddress().equals(bluetoothDevice.getAddress()))
+                break;
+        }
+
+        return i;
     }
 
     public void emptyList() {

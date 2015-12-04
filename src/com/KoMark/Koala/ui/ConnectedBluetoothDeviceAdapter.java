@@ -3,6 +3,7 @@ package com.KoMark.Koala.ui;
 import android.app.Activity;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -60,6 +61,7 @@ public class ConnectedBluetoothDeviceAdapter extends ArrayAdapter<BluetoothDevic
             viewHolder.bluetoothDeviceName.setTag(bluetoothDevice.getAddress());
 
             viewHolder.bluetoothDeviceBondStatus.setText("Connected");
+            viewHolder.bluetoothDeviceBondStatus.setTextColor(Color.parseColor("#517f4b"));
             viewHolder.bluetoothDeviceBondStatus.setVisibility(View.VISIBLE);
         }
 
