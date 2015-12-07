@@ -32,7 +32,7 @@
                 android:textSize="40sp"
                 android:background="#ff8400"
                 android:textColor="#fff"
-                android:text="3"/>
+                android:text="1"/>
     </RelativeLayout>
     <com.github.mikephil.charting.charts.LineChart
             android:id="@+id/chart"
