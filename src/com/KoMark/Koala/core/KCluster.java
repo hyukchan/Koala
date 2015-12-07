@@ -28,6 +28,10 @@ public class KCluster implements AccReadingListener {
         koalaManager.kSensorManager.addAccReadingListener(this);
     }
 
+    public ArrayList<SensorData> getAccReadings() {
+        return accReadings;
+    }
+
     public void addAccReading(SensorData sensorData) {
         if (accReadings.size() > 5000) {
             accReadings.remove(0);

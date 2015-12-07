@@ -21,8 +21,6 @@ public class KoalaService extends Service {
     private final String CLASS_TAG = "KService";
     private final IBinder myBinder = new KServiceBinder();
 
-
-
     @Override
     public IBinder onBind(Intent intent) {
         Log.i(CLASS_TAG, "OnBind called");
@@ -39,6 +37,7 @@ public class KoalaService extends Service {
             ((KoalaApplication) context).setKManager(koalaManager);
             Log.i(CLASS_TAG, "Bound to old KManager");
         }
+
     }
 
     public class KServiceBinder extends Binder {
@@ -61,7 +60,7 @@ public class KoalaService extends Service {
                 .setWhen(System.currentTimeMillis());
         Notification n = build.getNotification();
         startForeground(999, n);
-        Log.i(CLASS_TAG, "OnCreate executed");
+        Log.i(CLASS_TAG, "OnCreate");
     }
 
 

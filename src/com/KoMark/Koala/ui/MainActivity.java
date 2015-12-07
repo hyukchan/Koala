@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.ImageView;
 import com.KoMark.Koala.KoalaApplication;
 import com.KoMark.Koala.R;
 import com.KoMark.Koala.core.listeners.AccReadingListener;
@@ -29,6 +30,14 @@ public class MainActivity extends Activity implements AccReadingListener, Sensor
 
         kChart = new KChart(lineChart);
         kChart.initializeChart();
+
+        Log.e("MainActivity", "onCreate");
+
+        context.onResume();
+    }
+
+    public void resumeKChart() {
+        kChart.resumeChart(context.getKoalaManager().kCluster.getAccReadings());
     }
 
     @Override
@@ -62,5 +71,13 @@ public class MainActivity extends Activity implements AccReadingListener, Sensor
     public void setListeners() {
         context.getKoalaManager().kSensorManager.addAccReadingListener(this);
         context.getKoalaManager().kComm.addSensorDataPackageReceiveListener(this);
+    }
+
+    public void onClickChartFocus(View view) {
+        if(kChart.focusChart()) {
+            ((ImageView) view).setImageResource(R.drawable.button_chart_focus_active);
+        } else {
+            ((ImageView) view).setImageResource(R.drawable.button_chart_focus_unactive);
+        }
     }
 }

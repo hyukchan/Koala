@@ -22,6 +22,8 @@ public class KChart {
     HashMap<String, Integer> deviceDatasets;
     long timestampBase;
 
+    boolean focusActive;
+
     int devicesetIndex = 1;
 
     public KChart(LineChart lineChart) {
@@ -30,6 +32,7 @@ public class KChart {
     }
 
     public void initializeChart() {
+        focusActive = true;
 
         lineChart.setBackgroundColor(Color.rgb(77, 77, 77));
         lineChart.setGridBackgroundColor(Color.rgb(77, 77, 77));
@@ -101,7 +104,10 @@ public class KChart {
             lineChart.setVisibleYRangeMaximum(100, YAxis.AxisDependency.LEFT);
 //
 //            // this automatically refreshes the chart (calls invalidate())
-            lineChart.moveViewTo(data.getXValCount() - 7, 50f, YAxis.AxisDependency.LEFT);
+
+            if(focusActive) {
+                lineChart.moveViewTo(data.getXValCount(), 50f, YAxis.AxisDependency.LEFT);
+            }
         }
     }
 
@@ -117,5 +123,33 @@ public class KChart {
         set.setValueTextSize(10f);
 
         return set;
+    }
+
+    public boolean focusChart() {
+        focusActive = !focusActive;
+
+        return focusActive;
+    }
+
+    public void resumeChart(ArrayList<SensorData> accReadings) {
+        LineData data = lineChart.getData();
+
+        if(data != null) {
+            LineDataSet set = data.getDataSetByIndex(0);
+
+            if (set == null) {
+                set = createSet("Current Device", Color.rgb(240, 99, 99));
+                data.addDataSet(set);
+            }
+
+            for (SensorData accReading : accReadings) {
+                data.addXValue(accReading.getTimestamp() + "");
+
+                data.addEntry(new Entry(accReading.getAcc(), set.getEntryCount()), 0);
+            }
+
+            // let the chart know it's data has changed
+            lineChart.notifyDataSetChanged();
+        }
     }
 }
