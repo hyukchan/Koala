@@ -431,9 +431,9 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
 
     private void broadcastDeviceConnected(BluetoothDevice connectedDevice) {
         for (KCommListener aListener : deviceFoundListeners) {
+            Log.i(CLASS_TAG, "Device connected broadcasted.");
             aListener.onDeviceConnected(connectedDevice);
         }
-        return;
     }
 
     private class ConnectedThread extends Thread {
@@ -460,7 +460,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
                 tmpObjOut = new ObjectOutputStream(tmpOut);
                 tmpObjOut.flush();
                 tmpObjIn = new ObjectInputStream(tmpIn);
-                peerList.add(remoteDevice);
+                //broadcastDeviceConnected(remoteDevice);
                 if(!isSlave) {
                     sendPeerGroupList();
                 }
@@ -551,6 +551,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
 
         private void manageConnectedClient(BluetoothSocket socket) {
             Log.i(CLASS_TAG, "Now connected to: "+socket.getRemoteDevice().getName());
+            peerList.add(socket.getRemoteDevice());
             broadcastDeviceConnected(socket.getRemoteDevice());
             socketT = new ConnectedThread(socket, MSG_LOST_SLAVE, socket.getRemoteDevice());
             socketT.start();
@@ -608,6 +609,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         }
 
         private void manageMasterConnection(BluetoothSocket mmSocket) {
+            peerList.add(mmSocket.getRemoteDevice());
             broadcastDeviceConnected(mmSocket.getRemoteDevice());
             socketT = new ConnectedThread(mmSocket, MSG_LOST_MASTER, mmSocket.getRemoteDevice());
             socketT.start(); // Should store this thread somewhere so it can be closed correctly.

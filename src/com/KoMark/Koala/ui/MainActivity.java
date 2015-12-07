@@ -58,8 +58,12 @@ public class MainActivity extends Activity implements AccReadingListener, Sensor
         super.onResume();
         koalaNetworkSizeTextView = (TextView) findViewById(R.id.koala_network_size);
         if(context.getKoalaManager() != null) {
-            koalaNetworkSizeTextView.setText("" + (context.getKoalaManager().kComm.getPeerList().size() + 1));
+            updateKoalaNetworkSize();
         }
+    }
+
+    public void updateKoalaNetworkSize() {
+        koalaNetworkSizeTextView.setText("" + (context.getKoalaManager().kComm.getPeerList().size() + 1));
     }
 
     @Override
@@ -84,6 +88,7 @@ public class MainActivity extends Activity implements AccReadingListener, Sensor
     public void setListeners() {
         context.getKoalaManager().kSensorManager.addAccReadingListener(this);
         context.getKoalaManager().kComm.addSensorDataPackageReceiveListener(this);
+        context.getKoalaManager().kComm.addKCommListener(this);
     }
 
     public void onClickChartFocus(View view) {
@@ -106,7 +111,13 @@ public class MainActivity extends Activity implements AccReadingListener, Sensor
 
     @Override
     public void onDeviceConnected(BluetoothDevice newDevice) {
-        koalaNetworkSizeTextView.setText(context.getKoalaManager().kComm.getPeerList().size());
+        Log.i("MainActivity", "device connected");
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                updateKoalaNetworkSize();
+            }
+        });
     }
 
     @Override
@@ -121,7 +132,13 @@ public class MainActivity extends Activity implements AccReadingListener, Sensor
 
     @Override
     public void onDeviceDisconnected(BluetoothDevice disconnectedDevice) {
-        koalaNetworkSizeTextView.setText(context.getKoalaManager().kComm.getPeerList().size());
+        Log.i("MainActivity", "device disconnected");
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                updateKoalaNetworkSize();
+            }
+        });
     }
 
     @Override
