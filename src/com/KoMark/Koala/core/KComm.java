@@ -17,6 +17,7 @@ import android.util.Log;
 import com.KoMark.Koala.KoalaApplication;
 import com.KoMark.Koala.core.listeners.KCommListener;
 import com.KoMark.Koala.core.listeners.SensorDataPackageReceiveListener;
+import com.KoMark.Koala.data.KGroupData;
 import com.KoMark.Koala.data.KProtocolMessage;
 import com.KoMark.Koala.data.SensorData;
 
@@ -80,7 +81,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         sensorDataPackageReceiveListeners = new ArrayList<>();
     }
 
-    public boolean pairWithDevice(BluetoothDevice device) {
+    public boolean pairWithDevice(BluetoothDevice device) { //Method to pair with device through UI.
         try{
             Log.i(CLASS_TAG, "Creating bond");
             Method m = device.getClass().getMethod("createBond", (Class[]) null);
@@ -234,8 +235,9 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
                                     sensorDataPackageReceiveListener.onSensorDataPackageReceive(sensorDataPackage, senderDeviceName);
                                 }
                                 break;
-                            case KProtocolMessage.DT_NETWORK_GROUP_LIST:
-
+                            case KProtocolMessage.DT_NETWORK_GROUP_LIST: //Received network group list
+                                Log.i(CLASS_TAG, "Received peer list.");
+                                //BluetoothDevice dev = new BluetoothDevice();
                                 break;
                         }
                     }
@@ -305,6 +307,13 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
             slave.writeObject(msg);
         }
         return true;
+    }
+
+
+    private void sendPeerGroupList() {
+        KProtocolMessage kMsg = new KProtocolMessage(new KGroupData(peerList), KProtocolMessage.MT_DATA, KProtocolMessage.DT_NETWORK_GROUP_LIST, mBluetoothAdapter.getName());
+        Log.i(CLASS_TAG, "Sending peer list broadcast message.");
+        broadcastToSlaves(kMsg);
     }
 
     public boolean isSlave() {
@@ -444,7 +453,6 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
             ObjectOutputStream tmpObjOut = null;
             this.lostMsg = lostMsg;
             this.remoteDevice = remoteDevice;
-            peerList.add(remoteDevice);
 
             try {
                 tmpIn = socket.getInputStream();
@@ -452,6 +460,10 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
                 tmpObjOut = new ObjectOutputStream(tmpOut);
                 tmpObjOut.flush();
                 tmpObjIn = new ObjectInputStream(tmpIn);
+                peerList.add(remoteDevice);
+                if(!isSlave) {
+                    sendPeerGroupList();
+                }
             } catch(IOException e) {
                 e.printStackTrace();
             }
