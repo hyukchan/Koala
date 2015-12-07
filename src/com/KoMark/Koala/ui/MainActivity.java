@@ -1,23 +1,27 @@
 package com.KoMark.Koala.ui;
 
 import android.app.Activity;
+import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.TextView;
 import com.KoMark.Koala.KoalaApplication;
 import com.KoMark.Koala.R;
 import com.KoMark.Koala.core.listeners.AccReadingListener;
+import com.KoMark.Koala.core.listeners.KCommListener;
 import com.KoMark.Koala.core.listeners.SensorDataPackageReceiveListener;
 import com.KoMark.Koala.data.SensorData;
 import com.github.mikephil.charting.charts.LineChart;
 
 import java.util.ArrayList;
 
-public class MainActivity extends Activity implements AccReadingListener, SensorDataPackageReceiveListener {
+public class MainActivity extends Activity implements AccReadingListener, SensorDataPackageReceiveListener, KCommListener {
     KChart kChart;
     KoalaApplication context;
+    TextView koalaNetworkSizeTextView;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -50,6 +54,15 @@ public class MainActivity extends Activity implements AccReadingListener, Sensor
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        koalaNetworkSizeTextView = (TextView) findViewById(R.id.koala_network_size);
+        if(context.getKoalaManager() != null) {
+            koalaNetworkSizeTextView.setText("" + (context.getKoalaManager().kComm.getPeerList().size() + 1));
+        }
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
         Log.i("MainActivity", "OnDestroy called");
@@ -79,5 +92,40 @@ public class MainActivity extends Activity implements AccReadingListener, Sensor
         } else {
             ((ImageView) view).setImageResource(R.drawable.button_chart_focus_unactive);
         }
+    }
+
+    @Override
+    public void onDeviceFound(BluetoothDevice newDevice) {
+
+    }
+
+    @Override
+    public void onDevicePaired(BluetoothDevice newDevice) {
+
+    }
+
+    @Override
+    public void onDeviceConnected(BluetoothDevice newDevice) {
+        koalaNetworkSizeTextView.setText(context.getKoalaManager().kComm.getPeerList().size());
+    }
+
+    @Override
+    public void onStartScan() {
+
+    }
+
+    @Override
+    public void onStopScan() {
+
+    }
+
+    @Override
+    public void onDeviceDisconnected(BluetoothDevice disconnectedDevice) {
+        koalaNetworkSizeTextView.setText(context.getKoalaManager().kComm.getPeerList().size());
+    }
+
+    @Override
+    public void onDeviceUnpaired(BluetoothDevice device) {
+
     }
 }
