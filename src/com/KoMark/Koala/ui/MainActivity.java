@@ -1,7 +1,9 @@
 package com.KoMark.Koala.ui;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.bluetooth.BluetoothDevice;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -11,6 +13,7 @@ import android.widget.TextView;
 import com.KoMark.Koala.KoalaApplication;
 import com.KoMark.Koala.R;
 import com.KoMark.Koala.core.listeners.AccReadingListener;
+import com.KoMark.Koala.core.listeners.AccidentDetectedListener;
 import com.KoMark.Koala.core.listeners.KCommListener;
 import com.KoMark.Koala.core.listeners.SensorDataPackageReceiveListener;
 import com.KoMark.Koala.data.SensorData;
@@ -18,10 +21,13 @@ import com.github.mikephil.charting.charts.LineChart;
 
 import java.util.ArrayList;
 
-public class MainActivity extends Activity implements AccReadingListener, SensorDataPackageReceiveListener, KCommListener {
+public class MainActivity extends Activity implements AccReadingListener, SensorDataPackageReceiveListener, KCommListener, AccidentDetectedListener {
     KChart kChart;
     KoalaApplication context;
     TextView koalaNetworkSizeTextView;
+
+    AlertDialog.Builder alertDialogBuilder;
+    AlertDialog alertDialog;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -36,6 +42,17 @@ public class MainActivity extends Activity implements AccReadingListener, Sensor
         kChart.initializeChart();
 
         Log.e("MainActivity", "onCreate");
+
+        alertDialogBuilder = new AlertDialog.Builder(MainActivity.this)
+                .setTitle("Accident Detected !")
+                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        // continue with delete
+                    }
+                })
+                .setIcon(android.R.drawable.ic_dialog_alert);
+
+        alertDialog = alertDialogBuilder.create();
 
         context.onResume();
     }
@@ -89,6 +106,7 @@ public class MainActivity extends Activity implements AccReadingListener, Sensor
         context.getKoalaManager().kSensorManager.addAccReadingListener(this);
         context.getKoalaManager().kComm.addSensorDataPackageReceiveListener(this);
         context.getKoalaManager().kComm.addKCommListener(this);
+        context.getKoalaManager().kCluster.addAccidentDetectedListener(this);
     }
 
     public void onClickChartFocus(View view) {
@@ -144,5 +162,12 @@ public class MainActivity extends Activity implements AccReadingListener, Sensor
     @Override
     public void onDeviceUnpaired(BluetoothDevice device) {
 
+    }
+
+    @Override
+    public void onAccidentDetected() {
+        if(!alertDialog.isShowing()) {
+            alertDialog.show();
+        }
     }
 }

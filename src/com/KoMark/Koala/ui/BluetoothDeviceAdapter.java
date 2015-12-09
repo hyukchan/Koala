@@ -1,6 +1,7 @@
 package com.KoMark.Koala.ui;
 
 import android.app.Activity;
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -19,11 +20,13 @@ import java.util.ArrayList;
 public class BluetoothDeviceAdapter extends ArrayAdapter<BluetoothDevice> {
     private final Context context;
     private ArrayList<BluetoothDevice> bluetoothDevices;
+    private BluetoothAdapter bluetoothAdapter;
 
-    public BluetoothDeviceAdapter(Context context, ArrayList<BluetoothDevice> bluetoothDevices) {
+    public BluetoothDeviceAdapter(Context context, ArrayList<BluetoothDevice> bluetoothDevices, BluetoothAdapter bluetoothAdapter) {
         super(context, R.layout.listitem_bluetoothdevice);
         this.context = context;
         this.bluetoothDevices = bluetoothDevices;
+        this.bluetoothAdapter = bluetoothAdapter;
     }
 
     @Override
@@ -60,7 +63,9 @@ public class BluetoothDeviceAdapter extends ArrayAdapter<BluetoothDevice> {
             viewHolder.bluetoothDeviceName.setText(bluetoothDevice.getName());
             viewHolder.bluetoothDeviceName.setTag(bluetoothDevice.getAddress());
 
-            if (bluetoothDevice.getBondState() == BluetoothDevice.BOND_BONDED) {
+            //if (bluetoothDevice.getBondState() == BluetoothDevice.BOND_BONDED) {
+                //viewHolder.bluetoothDeviceBondStatus.setVisibility(View.VISIBLE);
+            if (bluetoothAdapter.getBondedDevices().contains(bluetoothDevice)) {
                 viewHolder.bluetoothDeviceBondStatus.setVisibility(View.VISIBLE);
             } else {
                 convertView.setOnClickListener(new View.OnClickListener() {

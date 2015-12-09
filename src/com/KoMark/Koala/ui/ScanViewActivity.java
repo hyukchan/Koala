@@ -1,6 +1,7 @@
 package com.KoMark.Koala.ui;
 
 import android.app.Activity;
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.os.Bundle;
@@ -28,6 +29,7 @@ public class ScanViewActivity extends Activity implements KCommListener {
     ConnectedBluetoothDeviceAdapter connectedBluetoothDeviceAdapter;
     KoalaApplication koalaApplication;
     Context context;
+    BluetoothAdapter bluetoothAdapter;
 
     ImageView refreshButton;
     ProgressBar refreshSpinner;
@@ -37,8 +39,10 @@ public class ScanViewActivity extends Activity implements KCommListener {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_scanview);
 
+        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+
         bluetoothDevicesListView = (ListView) findViewById(R.id.scanview_devices);
-        bluetoothDeviceAdapter = new BluetoothDeviceAdapter(this, bluetoothDevices);
+        bluetoothDeviceAdapter = new BluetoothDeviceAdapter(this, bluetoothDevices, bluetoothAdapter);
         bluetoothDevicesListView.setAdapter(bluetoothDeviceAdapter);
 
         context = this;
@@ -91,7 +95,9 @@ public class ScanViewActivity extends Activity implements KCommListener {
                         bluetoothDeviceAdapter.notifyDataSetChanged();
                     } else {
                         int position = bluetoothDeviceAdapter.getItemPosition(newDevice);
-                        updateView(position);
+                        if(newDevice.getBondState() == BluetoothDevice.BOND_BONDED) {
+                            updateView(position);
+                        }
                     }
                 }
             }
@@ -138,7 +144,7 @@ public class ScanViewActivity extends Activity implements KCommListener {
             public void run() {
                 bluetoothDevices = new ArrayList<>();
                 bluetoothDeviceAdapter.emptyList();
-                bluetoothDeviceAdapter = new BluetoothDeviceAdapter(context, bluetoothDevices);
+                bluetoothDeviceAdapter = new BluetoothDeviceAdapter(context, bluetoothDevices, bluetoothAdapter);
                 bluetoothDeviceAdapter.notifyDataSetChanged();
                 bluetoothDevicesListView.setAdapter(bluetoothDeviceAdapter);
                 connectedBluetoothDevices = new ArrayList<>();

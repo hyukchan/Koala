@@ -8,21 +8,30 @@
             android:id="@+id/koala_network_status"
             android:layout_width="match_parent"
             android:layout_height="70dp"
-            android:background="@android:color/holo_red_dark"
+            android:background="#333"
             android:layout_alignParentTop="true"
             android:onClick="onClickKoalaNetworkTitle">
+        <ImageView
+                android:id="@+id/koala_logo"
+                android:layout_width="60dp"
+                android:layout_height="match_parent"
+                android:src="@drawable/logo"
+                android:layout_alignParentLeft="true"
+                android:paddingLeft="10dp"
+                />
+
         <TextView
                 android:id="@+id/koala_network_title"
                 android:text="Koala Network"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_toLeftOf="@+id/koala_network_size"
-                android:layout_alignParentLeft="true"
+                android:layout_toRightOf="@id/koala_logo"
                 android:background="#333"
                 android:gravity="center_vertical"
                 android:textColor="#fff"
                 android:textSize="30sp"
-                android:paddingLeft="20dp"/>
+                android:paddingLeft="10dp"/>
         <TextView
                 android:id="@id/koala_network_size"
                 android:layout_width="70dp"

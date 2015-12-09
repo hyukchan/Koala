@@ -13,10 +13,10 @@ public class KoalaManager {
     public KComm kComm;
 
     public void initializeComponents(Context applicationContext) {
+        kComm = new KComm(applicationContext);
         kSensorManager = new KSensorManager(applicationContext);
         kCluster = new KCluster(applicationContext);
         kAlertingAgent = new KAlertingAgent();
-        kComm = new KComm(applicationContext);
     }
 
     public void shutdown() {

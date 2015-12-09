@@ -412,13 +412,13 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
 
         if(intent.getAction().equals(BluetoothDevice.ACTION_BOND_STATE_CHANGED)) {
             BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-            if(intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, -1) == BluetoothDevice.BOND_BONDED) {
+            if(device.getBondState() == BluetoothDevice.BOND_BONDED) {
                 Log.i(CLASS_TAG, "Acquired bond to: " + device.getName());
                 defineMaster(); //Changes master if new device has higher MAC address than curr master.
                 for (KCommListener aListener : deviceFoundListeners) {
                     aListener.onDevicePaired(device);
                 }
-            } else if (intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, -1) == BluetoothDevice.BOND_NONE &&
+            } else if (device.getBondState() == BluetoothDevice.BOND_NONE &&
                         intent.getIntExtra(BluetoothDevice.EXTRA_PREVIOUS_BOND_STATE, -1) == BluetoothDevice.BOND_BONDED) {
                     Log.i(CLASS_TAG, "Prev bonded device now unbonded: " + device.getName());
                 for (KCommListener aListener : deviceFoundListeners) {
