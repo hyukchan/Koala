@@ -58,6 +58,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
 
     public KComm(Context context) {
         mHandler = new Handler(this);
+        /*The below MSG_SCAN_PERIOD message is used to enable automatic and continuous discovery of nearby devices. Disabled for demo purposes */
         //mHandler.sendMessageDelayed(mHandler.obtainMessage(MSG_SCAN_PERIOD), 60000);
         this.context = context;
         kManager = ((KoalaApplication) context).getKoalaManager(); //Store context to koala manager
@@ -198,9 +199,9 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
         }
     }
 
-    private void setupAsMaster() { //Only setup if not connected to anything. To
+    private void setupAsMaster() { //Only setup if not connected to anything.
         Log.i(CLASS_TAG, "Size of socketList: "+socketList.size());
-        if(serverT == null || (socketT != null && !(socketList.size() > 0)) ) {
+        if(serverT == null) {
             Log.i("KComm", "Establishing server socket as a Master.");
             serverT = new ServerThread();
             serverT.start();
@@ -228,7 +229,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
                     KProtocolMessage kProtocolMessage = (KProtocolMessage) obj;
                     if(kProtocolMessage.getMessageType() == KProtocolMessage.MT_DATA) {
                         switch(kProtocolMessage.getDataType()) {
-                            case KProtocolMessage.DT_ACCELERATOR_DATA:
+                            case KProtocolMessage.DT_ACCELERATOR_DATA: //Received accelerometer data
                                 ArrayList<SensorData> sensorDataPackage = kProtocolMessage.getSensorDatas();
                                 String senderDeviceName = kProtocolMessage.getSenderDeviceName();
                                 for (SensorDataPackageReceiveListener sensorDataPackageReceiveListener : sensorDataPackageReceiveListeners) {
@@ -262,7 +263,7 @@ public class KComm extends BroadcastReceiver implements Handler.Callback {
                 break;
             case MSG_SCAN_PERIOD:
                 Log.i(CLASS_TAG, "Scan period timer run out.");
-                mHandler.sendMessageDelayed(mHandler.obtainMessage(MSG_SCAN_PERIOD), 60000);
+                mHandler.sendMessageDelayed(mHandler.obtainMessage(MSG_SCAN_PERIOD), 120000);
                 scanForPeers();
                 break;
             case 5:
